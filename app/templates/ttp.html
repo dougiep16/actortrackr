@@ -1,0 +1,340 @@
+{% extends "layouts/base.html" %}
+{% block container %}
+
+
+{% if role=='VIEW' %}
+<div class="row" style="margin-bottom:10px">
+    <div class="col-md-8">
+        <h3 style="margin-top:0px">TTP</h3>
+    </div>
+    <div class="col-md-4" style="text-align:right">
+        <a href="/ttp/export/{{ ttp_id }}/"><button type="button" class="btn btn-success btn-small">Export as .TPX</button></a>
+        {% if session['write'] %}
+        <a href="/ttp/edit/{{ ttp_id }}/"><button type="button" class="btn btn-success btn-small">Edit TTP</button></a>
+        {% endif %}
+    </div>
+</div>
+{% elif role=='EDIT'%} 
+<div class="row" style="margin-bottom:10px">
+    <div class="col-md-8">
+        <h3 style="margin-top:0px">TTP</h3>
+    </div>
+    <div class="col-md-4" style="text-align:right">
+        <a href="/ttp/export/{{ ttp_id }}/"><button type="button" class="btn btn-success btn-small">Export as .TPX</button></a>
+        <a href="/ttp/view/{{ ttp_id }}/"><button type="button" class="btn btn-success btn-small">View TTP</button></a>
+    </div>
+</div>
+{% else %}
+
+<h3>TTP</h3>
+
+{% endif %}
+
+<!-- Help Dialog for Criticality -->
+<div class="modal fade" id="help-criticality" role="dialog">
+    <div class="modal-dialog">
+      <!-- Modal content-->
+      <div class="modal-content">
+        <div class="modal-header">
+          <button type="button" class="close" data-dismiss="modal">&times;</button>
+          <h4>Criticality Explained</h4>
+        </div>
+        <div class="modal-body">
+          <p>A criticality score is one of the components of a TIC score, and is a measure of severity, with 1 being the lowest, and 99 being the highest severity or criticality. Criticality scores are assigned to each individual observable and should be relative to each other (ie, criticality for a spammer should not be higher than that of a C&amp;C server). Please use the following scores as a guide to stay relative to, but of course they can differ based on the individual severity (ie an APT actor may be higher than a script kiddie): Hacktivist = 40, generic malware = 50, more specific and impactful malware = 70, C&amp;C = 75, APT actor = 95, etc</p>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-default" data-dismiss="modal">Close</button>
+        </div>
+      </div>
+    </div>
+</div>
+
+<div class="row">
+    <div class="col-md-12">
+        <form role="form" method="post" autocomplete="off">
+            {{ form.hidden_tag() }}
+            {% if form.errors %}
+                <div class="alert alert-danger">
+                    <div id="showErrors">
+                        There were errors submitting the form!
+                        {% if 'csrf_token' in form.errors %}
+                            Invalid CSRF Token, try submitting the form again
+                        {% endif %}
+                    </div>
+                    <div id="errorList" style="display:none">
+                        <pre>{{form.errors}}</pre>
+                    </div>
+                </div>
+            {% endif %}
+
+            <div class="form-group">
+                <label for="name">Name<span class="required">*</span></label>
+                {% if role=='ADD' or role=='EDIT' %}
+                    {{ form.ttp_name(class="form-control") }}
+                {% else %}
+                    {{ form.ttp_name(class="form-control", disabled=true) }}
+                {% endif %}
+                {% if form.ttp_name.errors %}
+                    <div class="alert alert-danger">{% for error in form.ttp_name.errors %}{{ error }}<br/>{% endfor %}</div>
+                {% endif %}
+            </div>
+
+            <div class="form-group">
+                <label for="name">First Observed Date<span class="required">*</span></label>
+                {% if role=='ADD' or role=='EDIT' %}
+                    {{ form.ttp_first_observed(class="form-control") }}
+                {% else %}
+                    {{ form.ttp_first_observed(class="form-control", disabled=true) }}
+                {% endif %}
+                {% if form.ttp_first_observed.errors %}
+                    <div class="alert alert-danger">{% for error in form.ttp_first_observed.errors %}{{ error }}<br/>{% endfor %}</div>
+                {% endif %}
+            </div>
+
+            <div class="form-group">
+                <label for="name">Description<span class="required">*</span></label>
+                {% if role=='ADD' or role=='EDIT' %}
+                    {{ form.ttp_description(class="form-control") }}
+                {% else %}
+                    {{ form.ttp_description(class="form-control", disabled=true) }}
+                {% endif %}
+                {% if form.ttp_description.errors %}
+                    <div class="alert alert-danger">{% for error in form.ttp_description.errors %}{{ error }}<br/>{% endfor %}</div>
+                {% endif %}
+            </div>
+
+            <div class="form-group">
+                <label for="description">Criticality<span class="required">*</span> <a href="" data-toggle="modal" data-target="#help-criticality"><span class="glyphicon glyphicon-question-sign"></span></a></label>
+                {% if role=='ADD' or role=='EDIT' %}
+                    {{ form.ttp_criticality(class="form-control") }}
+                {% else %}
+                    {{ form.ttp_criticality(class="form-control", disabled=true) }}
+                {% endif %}
+                {% if form.ttp_criticality.errors %}
+                    <div class="alert alert-danger">{% for error in form.ttp_criticality.errors %}{{ error }}<br/>{% endfor %}</div>
+                {% endif %}
+            </div>
+
+            <div class="form-group">
+                <div class="row" data-toggle="fieldset" id="actor-class-fieldset">
+                    <div class="col-md-12">
+                    {% if role=='ADD' or role=='EDIT' %}
+                        <div class="row">
+                            <div class="col-md-5">
+                                 <label for="family">Classification Family<span class="required">*</span></label>
+                            </div>
+                            <div class="col-md-6">
+                                <label for="id">Classification ID<span class="required">*</span></label>
+                            </div>
+                        </div>
+
+                        {% for l in form.ttp_class %}
+                        <div class="row" data-toggle="fieldset-entry" style="margin-bottom:5px">
+                            <div class="col-md-5">
+                                {{ l.form.a_family(class="form-control", onchange="javascript:selectChanged(this.id,'tpx_classification')", **{'data-change-target':'true'} ) }}
+                            </div>
+                            <div class="col-md-6">
+                                {{ l.form.a_id(class="form-control dynamic-target") }}
+                            </div>
+                            <div class="col-md-1" style="text-align:right">
+                                <button type="button" class="btn btn-danger" data-toggle="fieldset-remove-row" id="actor-class-{{loop.index0}}-remove">&times;</button>
+                            </div>
+                        </div>
+                        {% endfor %}
+
+                        <div class="row">
+                            <div class="col-md-12">
+                                <button type="button" class="btn btn-primary btn-sm" data-toggle="fieldset-add-row" data-target="#actor-class-fieldset"><span class="glyphicon glyphicon-plus"></span> Add Another Classification</button>
+                            </div>
+                        </div>
+
+                    {% else %}
+                        <div class="row">
+                            <div class="col-md-6">
+                                 <label for="family">Classification Family</label>
+                            </div>
+                            <div class="col-md-6">
+                                <label for="id">Classification ID</label>
+                            </div>
+                        </div>
+
+                        {% for l in form.ttp_class %}
+                        <div class="row" data-toggle="fieldset-entry" style="margin-bottom:5px">
+                            <div class="col-md-6">
+                                {{ l.form.a_family(class="form-control", disabled=true) }}
+                            </div>
+                            <div class="col-md-6">
+                                {{ l.form.a_id(class="form-control", disabled=true) }}
+                            </div>
+                        </div>
+                        {% endfor %}
+
+                    {% endif %}
+
+                    {% if form.ttp_class.errors %}
+                        <div class="alert alert-danger">{% for error in form.ttp_class.errors %}{{ error }}<br/>{% endfor %}</div>
+                    {% endif %}
+                    </div>
+                </div>
+            </div>
+
+            <hr/>
+            
+            <div class="form-group">
+                <label for="name">Related Actors</label> 
+                <div class="row" data-toggle="fieldset" id="related_actors-fieldset">
+                    <div class="col-md-12">
+                    {% if role=='ADD' or role=='EDIT' %}
+                        {% for l in form.ttp_actors %}
+
+                            <div class="row" data-toggle="fieldset-entry" style="margin-bottom:5px">
+                                <div class="col-md-11">
+                                    {{ l.form.data(class="form-control") }}
+                                </div>
+                                <div class="col-md-1" style="text-align:right">
+                                    <button type="button" class="btn btn-danger" data-toggle="fieldset-remove-row" id="related_actors-remove">&times;</button>
+                                </div>
+                            </div>
+                            {% if l.form.data.errors %}
+                                <div class="col-md-11 alert alert-danger">{% for error in l.form.data.errors %}{{ error }}<br/>{% endfor %}</div>
+                            {% endif %}
+
+                        {% endfor %}
+
+                        <div class="row">
+                            <div class="col-md-12">
+                                <button type="button" class="btn btn-primary btn-sm" data-toggle="fieldset-add-row" data-target="#related_actors-fieldset"><span class="glyphicon glyphicon-plus"></span> Add Another TTP</button>
+
+                                <a href="/actor/add" target="_blank"><button type="button" class="btn btn-primary btn-sm">Create a new Actor</button></a>
+
+                                <button type="button" class="btn btn-primary btn-sm" class="list-refresh">Refresh Actor List</button>
+                            </div>
+                        </div>
+
+                    {% else %}
+
+                        {% for l in form.ttp_actors %}
+                        <div class="row" style="margin-bottom:5px">
+                            <div class="col-md-12">
+                                {{ l.form.data(class="form-control", disabled=true) }}
+                            </div>
+                        </div>
+                        {% endfor %}
+
+                    {% endif %}
+                    </div>
+                </div>
+            </div>
+
+            <div class="form-group">
+                <label for="name">Related Reports</label> 
+                <div class="row" data-toggle="fieldset" id="related_reports-fieldset">
+                    <div class="col-md-12">
+                    {% if role=='ADD' or role=='EDIT' %}
+                        {% for l in form.ttp_reports %}
+
+                            <div class="row" data-toggle="fieldset-entry" style="margin-bottom:5px">
+                                <div class="col-md-11">
+                                    {{ l.form.data(class="form-control") }}
+                                </div>
+                                <div class="col-md-1" style="text-align:right">
+                                    <button type="button" class="btn btn-danger" data-toggle="fieldset-remove-row" id="related_reports-remove">&times;</button>
+                                </div>
+                            </div>
+                            {% if l.form.data.errors %}
+                                <div class="col-md-11 alert alert-danger">{% for error in l.form.data.errors %}{{ error }}<br/>{% endfor %}</div>
+                            {% endif %}
+
+                        {% endfor %}
+
+                        <div class="row">
+                            <div class="col-md-12">
+                                <button type="button" class="btn btn-primary btn-sm" data-toggle="fieldset-add-row" data-target="#related_reports-fieldset"><span class="glyphicon glyphicon-plus"></span> Add Another Report</button>
+
+                                <a href="/report/add" target="_blank"><button type="button" class="btn btn-primary btn-sm">Create a new Report</button></a>
+
+                                <button type="button" class="btn btn-primary btn-sm" class="list-refresh">Refresh Report List</button>
+                            </div>
+                        </div>
+
+                    {% else %}
+
+                        {% for l in form.ttp_reports %}
+                        <div class="row" style="margin-bottom:5px">
+                            <div class="col-md-12">
+                                {{ l.form.data(class="form-control", disabled=true) }}
+                            </div>
+                        </div>
+                        {% endfor %}
+
+                    {% endif %}
+                    </div>
+                </div>
+            </div>
+
+            <div class="form-group">
+                <label for="name">Related TTPs</label> 
+                <div class="row" data-toggle="fieldset" id="related_ttps-fieldset">
+                    <div class="col-md-12">
+                    {% if role=='ADD' or role=='EDIT' %}
+                        {% for l in form.ttp_ttps %}
+
+                            <div class="row" data-toggle="fieldset-entry" style="margin-bottom:5px">
+                                <div class="col-md-11">
+                                    {{ l.form.data(class="form-control") }}
+                                </div>
+                                <div class="col-md-1" style="text-align:right">
+                                    <button type="button" class="btn btn-danger" data-toggle="fieldset-remove-row" id="related_ttps-remove">&times;</button>
+                                </div>
+                            </div>
+                            {% if l.form.data.errors %}
+                                <div class="col-md-11 alert alert-danger">{% for error in l.form.data.errors %}{{ error }}<br/>{% endfor %}</div>
+                            {% endif %}
+
+                        {% endfor %}
+
+                        <div class="row">
+                            <div class="col-md-12">
+                                <button type="button" class="btn btn-primary btn-sm" data-toggle="fieldset-add-row" data-target="#related_ttps-fieldset"><span class="glyphicon glyphicon-plus"></span> Add Another TTP</button>
+
+                                <a href="/ttp/add" target="_blank"><button type="button" class="btn btn-primary btn-sm">Create a new TTP</button></a>
+
+                                <button type="button" class="btn btn-primary btn-sm" class="list-refresh">Refresh TTP List</button>
+                            </div>
+                        </div>
+
+                    {% else %}
+
+                        {% for l in form.ttp_ttps %}
+                        <div class="row" style="margin-bottom:5px">
+                            <div class="col-md-12">
+                                {{ l.form.data(class="form-control", disabled=true) }}
+                            </div>
+                        </div>
+                        {% endfor %}
+
+                    {% endif %}
+                    </div>
+                </div>
+            </div>
+
+            <div class="form-group" style="text-align:right;margin-top:20px">
+                {% if role=='ADD' %}
+                    <button type="submit" class="btn btn-success">Add New TTP</button>
+                {% elif role=='EDIT' %}
+                    <button type="submit" class="btn btn-success">Save</button>
+                {% else %}
+                    &nbsp;
+                {% endif %}
+            </div>
+        </form>
+    </div>
+</div>
+
+{% endblock %}
+
+{% block javascript %}
+<script>
+
+</script>
+{% endblock %}

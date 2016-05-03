@@ -1,0 +1,400 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="description" content="">
+    <meta name="author" content="">
+
+    {% if page_title %}
+    <title>{{ page_title }}</title>
+    {% else %}
+    <title>ActorTrackr</title>
+    {% endif %}
+
+    <!-- Bootstrap Core CSS -->
+    <link href="/static/css/bootstrap.min.css" rel="stylesheet">
+
+    <!-- Custom CSS -->
+    <link href="/static/css/shop-item.css" rel="stylesheet">
+
+    <!-- HTML5 Shim and Respond.js IE8 support of HTML5 elements and media queries -->
+    <!-- WARNING: Respond.js doesn't work if you view the page via file:// -->
+    <!--[if lt IE 9]>
+        <script src="https://oss.maxcdn.com/libs/html5shiv/3.7.0/html5shiv.js"></script>
+        <script src="https://oss.maxcdn.com/libs/respond.js/1.4.2/respond.min.js"></script>
+    <![endif]-->
+
+    <link rel="stylesheet" href="//code.jquery.com/ui/1.11.4/themes/smoothness/jquery-ui.css">
+
+    <style>
+    .alert {
+        margin-top:5px;
+        padding:5px;    
+    }
+
+    .required {
+        color: red;
+    }
+
+    .suggestion {
+        padding:5px;
+        border-bottom: 1px solid #ccc;
+        cursor: pointer;
+    }
+
+    .suggestion:hover {
+       background-color:#eee;
+    }
+
+    .element label {
+        font-weight: normal;
+    }
+
+    .table>tbody>tr>td.last {
+        width: 1px; 
+        white-space: nowrap;
+    }
+    </style>
+</head>
+
+<body>
+
+    <!-- Navigation -->
+    <nav class="navbar navbar-inverse navbar-fixed-top" role="navigation">
+        <div class="container">
+            <!-- Brand and toggle get grouped for better mobile display -->
+            <div class="navbar-header">
+                <button type="button" class="navbar-toggle" data-toggle="collapse" data-target="#bs-example-navbar-collapse-1">
+                    <span class="sr-only">Toggle navigation</span>
+                    <span class="icon-bar"></span>
+                    <span class="icon-bar"></span>
+                    <span class="icon-bar"></span>
+                </button>
+                <a class="navbar-brand" href="/">ActorTrackr</a>
+            </div>
+            <!-- Collect the nav links, forms, and other content for toggling -->
+            <div class="collapse navbar-collapse" id="bs-example-navbar-collapse-1">
+                <ul class="nav navbar-nav">
+                    <li>
+                        <a href="/about">About</a>
+                    </li>
+                    <li>
+                        <a href="/contact">Contact</a>
+                    </li>
+                </ul>
+                <ul class="nav navbar-nav navbar-right">
+                    {% if not session['logged_in'] %}
+                    <li>
+                        <a href="/user/register">Register</a>
+                    </li>
+                    <li>
+                        <a href="/user/login">Login</a>
+                    </li>
+                    {% else %}
+                    <li>
+                        <a href="javascript: return false">Logged in as {{ session['name'] }}</a>
+                    </li>
+                    <li>
+                        <a href="/user/logout">Logout</a>
+                    </li>
+                    {% endif %}
+
+                    {% if session['admin'] %}
+                    <li>
+                        <a href="/admin">Admin</a>
+                    </li>
+                    {% endif %}
+                </ul>
+            </div>
+            <!-- /.navbar-collapse -->
+        </div>
+        <!-- /.container -->
+    </nav>
+
+    <!-- Page Content -->
+    <div class="container">
+
+        {% with messages = get_flashed_messages(with_categories=true) %}
+            {% if messages %}
+                {% for category, message in messages %}
+                    <div class="alert alert-{{ category }}">
+                        {{message}}
+                    </div>
+                {% endfor %}
+            {% endif %}
+        {% endwith %}
+
+        <h1>{{ page_title }}</h1>
+
+        {% block container %}{% endblock %}
+    </div>
+    <!-- /.container -->
+
+    <div class="container">
+        <hr>
+
+        <!-- Footer -->
+        <footer>
+            <div class="row">
+                <div class="col-lg-6">
+                    <p>Copyright &copy; Lookingglass Cyber Solutions, Inc 2016</p>
+                </div>
+                <div class="col-lg-6" style="text-align:right">
+                    <p>
+                        <a href="https://github.com/dougiep16/actortrackr" target="_blank">GitHub</a>&nbsp;&nbsp;|&nbsp;&nbsp;
+                        <a href="https://twitter.com/LG_CTIG" target="_blank">Twitter<a/>&nbsp;&nbsp;|&nbsp;&nbsp;
+                        <a href="http://deaddrop.threatpool.com" target="_blank">Deaddrop Blog</a><!--&nbsp;&nbsp;|&nbsp;&nbsp;
+                        <a href="/export">Export the data</a>-->
+                    </p>
+                </div>
+            </div>
+        </footer>
+    </div>
+    <!-- /.container -->
+
+    <!-- jQuery -->
+    <script src="/static/js/jquery.js"></script>
+
+    <!-- Bootstrap Core JavaScript -->
+    <script src="/static/js/bootstrap.min.js"></script>
+
+    <script src="//code.jquery.com/ui/1.11.4/jquery-ui.js"></script>
+
+    <script>
+    function contains(a, obj) {
+        var i = a.length;
+        while (i--) {
+           if (a[i] === obj) {
+               return true;
+           }
+        }
+        return false;
+    }
+
+    function isNumeric(n) {
+      return !isNaN(parseFloat(n)) && isFinite(n);
+    }
+
+    function selectChanged(source_id, type){
+        var source = $("#" + source_id)
+        var target = source.parent().parent().find(".dynamic-target")
+        if(target){
+            var value  =  source.val()
+            //target.empty()
+            //target.append($("<option></option>").val("_loading").html("...Loading"));
+
+            $.get( "/ajax/fetch/" + type + "/" + value, function( data ) {
+                target.empty()
+                for (var i in data){
+                    target.append($("<option></option>").val(i).html(data[i]));
+                }
+            });
+        }
+    }
+
+    function getNewElement(type,value,label,checked,i,j){
+        checked_string = ''
+        if (checked){
+            checked_string = 'checked="checked"'
+        }
+
+        r = '<div class="element">' +
+                    '<input id="'+type+'-'+i+'-related_elements-'+j+'-element" name="'+type+'-'+i+'-related_elements-'+j+'-element" type="checkbox" value="y" '+checked_string+'> ' + 
+                    '<label for="'+type+'-'+i+'-related_elements-'+j+'-element">'+label+'</label>' +
+                    '<input id="'+type+'-'+i+'-related_elements-'+j+'-element_value" name="'+type+'-'+i+'-related_elements-'+j+'-element_value" type="hidden" value="'+value+'">' + 
+                '</div>'
+
+        return r
+    }
+
+
+    function populateRelatedElements(related_elements, related_elements_dict){
+        related_elements.sort()
+
+        /*
+         * Populate the related-element fields with the new options
+         */
+        $(".related-elements").each(function(){
+
+            var currentId = "" //store the value of id, so we can determine type and index
+            var value_to_checked = {}
+
+            console.log("Found one...")
+            //determine which options are currently checked
+            $(this).find("input[type=checkbox]").each(function(){
+                currentId = $(this).attr('id')
+
+                var value = $(this).parent().find("input[type=hidden]:first").val()
+                var is_checked = $(this).is(':checked')
+                console.log(value + " = " + is_checked)
+                value_to_checked[value] = is_checked
+
+            });
+
+            type = currentId.split("-")[0]
+            idx = currentId.split("-")[1]
+
+            console.log(type)
+            console.log(value_to_checked)
+
+
+            $(this).find(".element").each(function(){$(this).remove()})
+
+            var parent_div = $(this)
+            var i = 0
+            if (related_elements.length == 0) {
+                parent_div.append(parent_div.append(getNewElement(type, '_NONE_', 'n/a', false, idx, i)))
+            }
+            else{
+                related_elements.forEach(function(entry) {
+                    v = related_elements_dict[entry]
+                    checked = value_to_checked[v]
+                    parent_div.append(getNewElement(type, v, entry, checked, idx, i))
+                    i+=1
+                });
+            }
+        })
+
+        //set a hidden field to the possible options for the related elements
+        $("#related_element_choices").val(JSON.stringify(related_elements_dict))
+    }
+
+
+
+    $(document).ready(function(){
+        $('[data-toggle="tooltip"]').tooltip(); 
+
+        $("div[data-toggle=fieldset]").each(function() {
+            //code borrowed and modified from https://gist.github.com/Vayn/a50c49a7f0cc5daec349
+            var $this = $(this);
+                
+            //Add new entry
+            $this.find("button[data-toggle=fieldset-add-row]").click(function() {
+                var target = $($(this).data("target"))
+                var oldrow = target.find("div[data-toggle=fieldset-entry]:last");
+                var row = oldrow.clone(true, true);
+                var elem_id = row.find(":input")[0].id;
+                var elem_num = parseInt(elem_id.replace(/.*-(\d{1,4})-.*/m, '$1')) + 1;
+                row.attr('data-id', elem_num);
+                console.log("## Renaming Inputs")
+                row.find(":input").each(function() {
+                    var old_id = $(this).attr('id')
+
+                    console.log($(this))
+                    var id = $(this).attr('id').replace('-' + (elem_num - 1) + '-', '-' + (elem_num) + '-');
+                    $(this).attr('name', id).attr('id', id).val('').removeAttr("checked");
+
+
+                    console.log(old_id + " = " + $(this).attr('id'))
+
+                    if ( $($(this).attr('id').split("_")).get(-1) == "other" ){
+                        $(this).hide()
+                    }
+                });
+                row.find(".related-elements-wrapper").each(function(){ $(this).hide() })
+
+                oldrow.after(row);
+
+                row.find("select").each(function(){
+                    $(this).val($("#" +$(this).attr('id')+ " option:first").val());
+
+                    if($(this).data('change-target') != undefined)
+                    {
+                        selectChanged($(this).attr('id'),'tpx_classification')
+                    }
+                });
+
+                elementChange(); 
+
+            }); //End add new entry
+
+            //Remove row
+            $this.find("button[data-toggle=fieldset-remove-row]").click(function() {
+                if($this.find("div[data-toggle=fieldset-entry]").length > 1) {
+                    var thisRow = $(this).closest("div[data-toggle=fieldset-entry]");
+                    thisRow.remove();
+                    elementChange()
+                }
+            }); //End remove row
+
+            //for select's with other option
+            $("select").each(function() {
+                $(this).change(function(){
+                    if($(this).val() == "_NEW_"){
+                        //show other input field
+                        $("#" + $(this).attr('id') + "_other").show()
+                    } else {
+                        //hiden other input field
+                        $("#" + $(this).attr('id') + "_other").hide()
+                    }
+                });
+            });
+        });
+
+        $(".list-refresh").click(function(){
+            var target_class = $(this).data('target')
+            $('body').find('.' + target_class).each(function(){
+
+                var target = $(this)
+                var current_value = $(this).val()
+                $.get( "/ajax/related/" + $(this).data('element-type') , function( data ) {
+                    target.empty()
+                    target.append($("<option></option>").val("_NONE_").html("n/a"));
+                    for (var i in data){
+                        target.append($("<option></option>").val(i).html(data[i]));
+                    }
+                    target.val(current_value)
+                });
+            });
+        });
+
+        $("#showErrors").click(function(){
+            $("#errorList").toggle();
+        });
+
+        $(function() {
+            $( "#actor_occurred_at" ).datepicker();
+            $( "#report_occurred_at" ).datepicker();
+            $( "#ttp_first_observed" ).datepicker();
+        });
+
+        $('.toggle-all').click(function(){
+            if($(this).data("toggle") == "true"){
+                toggle = true
+                $(this).data("toggle","false")
+            }else{
+                toggle = false
+                $(this).data("toggle","true")
+            }
+            
+
+            $(this).parents().eq(2).find("input[type=checkbox]").each(function(){
+                console.log($(this).attr('id'))
+                $(this).prop('checked', toggle);
+            });
+
+            return false
+        });
+
+        try { 
+            elementChange(); 
+
+            $(".related-element-scroller").each(function(){
+                var pos = $(this).find(".related-element-top").position().top()
+                $(this).scrollTop(pos)
+            })
+        } 
+        catch(e) {}
+    });
+
+    </script>
+
+
+   {% block javascript %}{% endblock %}
+</body>
+
+</html>

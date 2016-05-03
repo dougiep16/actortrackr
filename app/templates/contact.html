@@ -1,0 +1,15 @@
+{% extends "layouts/base.html" %}
+{% block container %}
+
+{% if error %}
+<div class="alert alert-danger">
+    {{ error }}
+</div>
+{% endif %}
+
+<div class="row">
+    <div class="col-md-12">
+        Questions, Comments, Issues? Contact <a href="mailto:ctig@lookingglasscyber.com">ctig@lookingglasscyber.com</a>
+    </div>
+</div>
+{% endblock %}

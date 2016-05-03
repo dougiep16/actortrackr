@@ -1,0 +1,807 @@
+{% extends "layouts/base.html" %}
+{% block container %}
+
+{% if role=='VIEW' %}
+<div class="row" style="margin-bottom:10px">
+    <div class="col-md-8">
+        <h3 style="margin-top:0px">Report</h3>
+    </div>
+    <div class="col-md-4" style="text-align:right">
+        <a href="/report/export/{{ report_id }}/"><button type="button" class="btn btn-success btn-small">Export as .TPX</button></a>
+        {% if session['write'] %}
+        <a href="/report/edit/{{ report_id }}/"><button type="button" class="btn btn-success btn-small">Edit Report</button></a>
+        {% endif %}
+    </div>
+</div>
+{% elif role=='EDIT' %} 
+<div class="row" style="margin-bottom:10px">
+    <div class="col-md-8">
+        <h3 style="margin-top:0px">Report</h3>
+    </div>
+    <div class="col-md-4" style="text-align:right">
+        <a href="/report/export/{{ report_id }}/"><button type="button" class="btn btn-success btn-small">Export as .TPX</button></a>
+        <a href="/report/view/{{ report_id }}/"><button type="button" class="btn btn-success btn-small">View Report</button></a>
+    </div>
+</div>
+{% else %}
+
+<h3>Report</h3>
+
+{% endif %}
+
+<!-- Help Dialog for Criticality -->
+<div class="modal fade" id="help-criticality" role="dialog">
+    <div class="modal-dialog">
+      <!-- Modal content-->
+      <div class="modal-content">
+        <div class="modal-header">
+          <button type="button" class="close" data-dismiss="modal">&times;</button>
+          <h4>Criticality Explained</h4>
+        </div>
+        <div class="modal-body">
+          <p>A criticality score is one of the components of a TIC score, and is a measure of severity, with 1 being the lowest, and 99 being the highest severity or criticality. Criticality scores are assigned to each individual observable and should be relative to each other (ie, criticality for a spammer should not be higher than that of a C&amp;C server). Please use the following scores as a guide to stay relative to, but of course they can differ based on the individual severity (ie an APT actor may be higher than a script kiddie): Hacktivist = 40, generic malware = 50, more specific and impactful malware = 70, C&amp;C = 75, APT actor = 95, etc</p>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-default" data-dismiss="modal">Close</button>
+        </div>
+      </div>
+    </div>
+</div>
+
+<div class="row">
+    <div class="col-md-12">
+        <form role="form" method="post" autocomplete="off">
+            {{ form.hidden_tag() }}
+            {% if form.errors %}
+                <div class="alert alert-danger">
+                    <div id="showErrors">
+                        There were errors submitting the form!
+                        {% if 'csrf_token' in form.errors %}
+                            Invalid CSRF Token, try submitting the form again
+                        {% endif %}
+                    </div>
+                    <div id="errorList" style="display:none">
+                        <pre>{{form.errors}}</pre>
+                    </div>
+                </div>
+            {% endif %}
+
+            <div class="form-group">
+                <label for="name">Name<span class="required">*</span></label>
+                {% if role=='ADD' or role=='EDIT' %}
+                    {{ form.report_name(class="form-control") }}
+                {% else %}
+                    {{ form.report_name(class="form-control", disabled=true) }}
+                {% endif %}
+                {% if form.report_name.errors %}
+                    <div class="alert alert-danger">{% for error in form.report_name.errors %}{{ error }}<br/>{% endfor %}</div>
+                {% endif %}
+            </div>
+
+            <div class="form-group">
+                <label for="name">Identifier<span class="required">*</span></label>
+                {% if role=='ADD' or role=='EDIT' %}
+                    {{ form.report_id(class="form-control") }}
+                {% else %}
+                    {{ form.report_id(class="form-control", disabled=true) }}
+                {% endif %}
+                {% if form.report_id.errors %}
+                    <div class="alert alert-danger">{% for error in form.report_id.errors %}{{ error }}<br/>{% endfor %}</div>
+                {% endif %}
+            </div>
+
+            <div class="form-group">
+                <label for="name">Report Date<span class="required">*</span></label>
+                {% if role=='ADD' or role=='EDIT' %}
+                    {{ form.report_occurred_at(class="form-control") }}
+                {% else %}
+                    {{ form.report_occurred_at(class="form-control", disabled=true) }}
+                {% endif %}
+                {% if form.report_occurred_at.errors %}
+                    <div class="alert alert-danger">{% for error in form.report_occurred_at.errors %}{{ error }}<br/>{% endfor %}</div>
+                {% endif %}
+            </div>
+
+            <div class="form-group">
+                <label for="name">Description<span class="required">*</span></label>
+                {% if role=='ADD' or role=='EDIT' %}
+                    {{ form.report_description(class="form-control") }}
+                {% else %}
+                    {{ form.report_description(class="form-control", disabled=true) }}
+                {% endif %}
+                {% if form.report_description.errors %}
+                    <div class="alert alert-danger">{% for error in form.report_description.errors %}{{ error }}<br/>{% endfor %}</div>
+                {% endif %}
+            </div>
+
+            <div class="form-group">
+                <label for="description">Criticality<span class="required">*</span> <a href="" data-toggle="modal" data-target="#help-criticality"><span class="glyphicon glyphicon-question-sign"></span></a></label>
+                {% if role=='ADD' or role=='EDIT' %}
+                    {{ form.report_criticality(class="form-control") }}
+                {% else %}
+                    {{ form.report_criticality(class="form-control", disabled=true) }}
+                {% endif %}
+                {% if form.report_criticality.errors %}
+                    <div class="alert alert-danger">{% for error in form.report_criticality.errors %}{{ error }}<br/>{% endfor %}</div>
+                {% endif %}
+            </div>
+
+            <div class="form-group">
+                <div class="row" data-toggle="fieldset" id="actor-class-fieldset">
+                    <div class="col-md-12">
+                    {% if role=='ADD' or role=='EDIT' %}
+                        <div class="row">
+                            <div class="col-md-5">
+                                 <label for="family">Classification Family<span class="required">*</span></label>
+                            </div>
+                            <div class="col-md-6">
+                                <label for="id">Classification ID<span class="required">*</span></label>
+                            </div>
+                        </div>
+
+                        {% for l in form.report_class %}
+                        <div class="row" data-toggle="fieldset-entry" style="margin-bottom:5px">
+                            <div class="col-md-5">
+                                {{ l.form.a_family(class="form-control", onchange="javascript:selectChanged(this.id,'tpx_classification')", **{'data-change-target':'true'} ) }}
+                            </div>
+                            <div class="col-md-6">
+                                {{ l.form.a_id(class="form-control dynamic-target") }}
+                            </div>
+                            <div class="col-md-1" style="text-align:right">
+                                <button type="button" class="btn btn-danger" data-toggle="fieldset-remove-row" id="actor-class-{{loop.index0}}-remove">&times;</button>
+                            </div>
+                        </div>
+                        {% endfor %}
+
+                        <div class="row">
+                            <div class="col-md-12">
+                                <button type="button" class="btn btn-primary btn-sm" data-toggle="fieldset-add-row" data-target="#actor-class-fieldset"><span class="glyphicon glyphicon-plus"></span> Add Another Classification</button>
+                            </div>
+                        </div>
+
+                    {% else %}
+                        <div class="row">
+                            <div class="col-md-6">
+                                 <label for="family">Classification Family</label>
+                            </div>
+                            <div class="col-md-6">
+                                <label for="id">Classification ID</label>
+                            </div>
+                        </div>
+
+                        {% for l in form.report_class %}
+                        <div class="row" data-toggle="fieldset-entry" style="margin-bottom:5px">
+                            <div class="col-md-6">
+                                {{ l.form.a_family(class="form-control", disabled=true) }}
+                            </div>
+                            <div class="col-md-6">
+                                {{ l.form.a_id(class="form-control", disabled=true) }}
+                            </div>
+                        </div>
+                        {% endfor %}
+
+                    {% endif %}
+
+                    {% if form.report_class.errors %}
+                        <div class="alert alert-danger">{% for error in form.report_class.errors %}{{ error }}<br/>{% endfor %}</div>
+                    {% endif %}
+                    </div>
+                </div>
+            </div>
+
+            <div class="form-group">
+                <label for="description">Report TLP (Overall)<span class="required">*</span></label>
+                {% if role=='ADD' or role=='EDIT' %}
+                    {{ form.report_tlp(class="form-control") }}
+                {% else %}
+                    {{ form.report_tlp(class="form-control", disabled=true) }}
+                {% endif %}
+                {% if form.report_tlp.errors %}
+                    <div class="alert alert-danger">{% for error in form.report_tlp.errors %}{{ error }}<br/>{% endfor %}</div>
+                {% endif %}
+            </div>
+
+            <div class="form-group">
+                <label for="name">Sections<span class="required">*</span></label> 
+                <div class="row" data-toggle="fieldset" id="report_sections-fieldset">
+                    <div class="col-md-12">
+                    {% if role=='ADD' or role=='EDIT' %}
+
+                        {% for l in form.report_sections %}
+                        <div data-toggle="fieldset-entry" style="margin-bottom:5px">
+                            <div style="padding:10px; border:1px solid #ccc">
+                                <div class="row">
+                                    <div class="col-md-11">
+                                        <label for="name">Title<span class="required">*</span></label> 
+                                        {{ l.form.title(class="form-control") }}
+                                    </div>
+                                    <div class="col-md-1" style="text-align:right">
+                                        <button type="button" class="btn btn-danger" data-toggle="fieldset-remove-row" id="report_actors-remove">&times;</button>
+                                    </div>
+                                </div>
+                                {% if l.form.title.errors %}
+                                <div class="row">
+                                    <div class="col-md-11">
+                                        <div class="alert alert-danger" style="margin-bottom:0px;">{% for error in l.form.title.errors %}{{ error }}<br/>{% endfor %}</div>
+                                    </div>
+                                </div>
+                                {% endif %}
+
+                                <div class="row" style="margin-top:5px">
+                                    <div class="col-md-11">
+                                        <label for="name">TLP<span class="required">*</span></label> 
+                                        {{ l.form.tlp(class="form-control") }}
+                                    </div>
+                                </div>
+                                {% if l.form.tlp.errors %}
+                                <div class="row">
+                                    <div class="col-md-11">
+                                        <div class="alert alert-danger" style="margin-bottom:0px;">{% for error in l.form.tlp.errors %}{{ error }}<br/>{% endfor %}</div>
+                                    </div>
+                                </div>
+                                {% endif %}
+
+                                <div class="row" style="margin-top:5px">
+                                    <div class="col-md-11">
+                                        <label for="name">Content<span class="required">*</span></label> 
+                                        {{ l.form.text(class="form-control related-text") }}
+                                    </div>
+                                </div>
+                                {% if l.form.text.errors %}
+                                <div class="row">
+                                    <div class="col-md-11">
+                                        <div class="alert alert-danger" style="margin-bottom:0px;">{% for error in l.form.text.errors %}{{ error }}<br/>{% endfor %}</div>
+                                    </div>
+                                </div>
+                                {% endif %}
+                            </div>
+                        </div>
+
+                        {% endfor %}
+
+                        <div class="row">
+                            <div class="col-md-12">
+                                <button type="button" class="btn btn-primary btn-sm" data-toggle="fieldset-add-row" data-target="#report_sections-fieldset"><span class="glyphicon glyphicon-plus"></span> Add Another Section</button>
+                            </div>
+                        </div>
+
+                    {% else %}
+
+                        {% for l in form.report_sections %}
+                        <div style="padding:10px; border:1px solid #ccc">
+                            <div class="row" style="margin-bottom:5px">
+                                <div class="col-md-12">
+                                    <label for="name">Title</label> 
+                                    {{ l.form.title(class="form-control", disabled=true) }}
+                                </div>
+                            </div>
+                            <div class="row" style="margin-bottom:5px">
+                                <div class="col-md-12">
+                                    <label for="name">TLP</label> 
+                                    {{ l.form.tlp(class="form-control", disabled=true) }}
+                                </div>
+                            </div>
+                            <div class="row" style="margin-bottom:5px">
+                                <div class="col-md-12">
+                                    <label for="name">Content</label> 
+                                    {{ l.form.text(class="form-control", disabled=true) }}
+                                </div>
+                            </div>
+                        </div>
+                        {% endfor %}
+
+                    {% endif %}
+                    </div>
+                </div>
+            </div>
+
+            <div class="form-group">
+                <label for="description">Source Reliability<span class="required">*</span></label>
+                {% if role=='ADD' or role=='EDIT' %}
+                    {{ form.report_source_reliability(class="form-control") }}
+                {% else %}
+                    {{ form.report_source_reliability(class="form-control", disabled=true) }}
+                {% endif %}
+                {% if form.report_source_reliability.errors %}
+                    <div class="alert alert-danger">{% for error in form.report_source_reliability.errors %}{{ error }}<br/>{% endfor %}</div>
+                {% endif %}
+            </div>
+
+            <div class="form-group">
+                <label for="description">Information Reliability<span class="required">*</span></label>
+                {% if role=='ADD' or role=='EDIT' %}
+                    {{ form.report_info_reliability(class="form-control") }}
+                {% else %}
+                    {{ form.report_info_reliability(class="form-control", disabled=true) }}
+                {% endif %}
+                {% if form.report_info_reliability.errors %}
+                    <div class="alert alert-danger">{% for error in form.report_info_reliability.errors %}{{ error }}<br/>{% endfor %}</div>
+                {% endif %}
+            </div>
+
+            <div class="form-group">
+                <label for="name">Sources</label> 
+                <div class="row" data-toggle="fieldset" id="report_sources-fieldset">
+                    <div class="col-md-12">
+                    {% if role=='ADD' or role=='EDIT' %}
+                        {% for l in form.report_sources %}
+                            <div class="row" data-toggle="fieldset-entry" style="margin-bottom:5px">
+                                <div class="col-md-11">
+                                    {{ l.form.source(class="form-control") }}
+                                </div>
+                                <div class="col-md-1" style="text-align:right">
+                                    <button type="button" class="btn btn-danger" data-toggle="fieldset-remove-row" id="report_sources-remove">&times;</button>
+                                </div>
+                            </div>
+                            {% if l.form.source.errors %}
+                                <div class="col-md-11 alert alert-danger">{% for error in l.form.source.errors %}{{ error }}<br/>{% endfor %}</div>
+                            {% endif %}
+                        {% endfor %}
+
+                        <div class="row">
+                            <div class="col-md-12">
+                                <button type="button" class="btn btn-primary btn-sm" data-toggle="fieldset-add-row" data-target="#report_sources-fieldset"><span class="glyphicon glyphicon-plus"></span> Add Another Source</button>
+                            </div>
+                        </div>
+
+                    {% else %}
+
+                        {% for l in form.report_sources %}
+                        <div class="row" style="margin-bottom:5px">
+                            <div class="col-md-12">
+                                {{ l.form.source(class="form-control", disabled=true) }}
+                            </div>
+                        </div>
+                        {% endfor %}
+
+                    {% endif %}
+                    </div>
+                </div>
+            </div>
+
+            <!--
+            BEGIN RELATED ELEMENTS
+            -->
+
+            <hr/>
+
+            <div class="form-group">
+                <label for="name">Related Actors</label> 
+                <div class="row" data-toggle="fieldset" id="related_actors-fieldset">
+                    <div class="col-md-12">
+                    {% if role=='ADD' or role=='EDIT' %}
+                        {% for l in form.report_actors %}
+
+                            <div data-toggle="fieldset-entry" style="margin-bottom:5px">
+                                <div style="padding:10px; border:1px solid #ccc">
+                                    <div class="row">
+                                        <div class="col-md-11">
+                                            <label>Select a Actor</label>
+                                        </div>
+                                    </div>
+                                    <div class="row">
+                                        <div class="col-md-11">
+                                            {{ l.form.data(class="form-control related-select-field related-select-actor-field", **{'data-element-type':'Actor'}) }}
+                                        </div>
+                                        <div class="col-md-1" style="text-align:right">
+                                            <button type="button" class="btn btn-danger" data-toggle="fieldset-remove-row" id="related_actors-remove">&times;</button>
+                                        </div>
+                                    </div>
+                                    {% if l.form.data.errors %}
+                                        <div class="col-md-11 alert alert-danger">{% for error in l.form.data.errors %}{{ error }}<br/>{% endfor %}</div>
+                                    {% endif %}
+
+                                    {% if l.form.data.data == "None" or l.form.data.data == "_NONE_" %}
+                                    <div class="related-elements-wrapper" style="display:none">
+                                    {% else %}
+                                    <div class="related-elements-wrapper">
+                                    {% endif %}
+                                        <div class="row">
+                                            <div class="col-md-11">
+                                                <label style="margin-top:6px">Which elements relate to the chosen Actor?</label>&nbsp;&nbsp;&nbsp;<button class="btn-xs btn-primary toggle-all" data-toggle="true"  id="related_actors-toggle">Toggle All</button>
+                                            </div>
+                                        </div>
+                                        <div class="row" style="margin-bottom:5px">
+                                            <div class="col-md-11">
+                                                <div class="related-element-scroller" style="border:1px solid #ccc; height:80px; padding:5px; overflow:auto">
+                                                    <div class="related-element-top" style="height:0px"></div>
+                                                    <div class="related-elements">
+                                                        {% for m in l.form.related_elements %}
+                                                        <div class="element">
+                                                            {{ m.form.element }}
+                                                            {{ m.form.element.label }}
+                                                            {{ m.form.element_value }}
+                                                        </div>
+                                                        {% endfor %}
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            {% if l.form.data.errors %}
+                                <div class="col-md-11 alert alert-danger">{% for error in l.form.data.errors %}{{ error }}<br/>{% endfor %}</div>
+                            {% endif %}
+
+                        {% endfor %}
+
+                        <div class="row">
+                            <div class="col-md-12">
+                                <button type="button" class="btn btn-primary btn-sm" data-toggle="fieldset-add-row" data-target="#related_actors-fieldset"><span class="glyphicon glyphicon-plus"></span> Add Another Actor</button>
+
+                                <a href="/actor/add" target="_blank"><button type="button" class="btn btn-primary btn-sm">Create a new Actor</button></a>
+
+                                <button type="button" class="btn btn-primary btn-sm list-refresh" data-target="related-select-actor-field">Refresh Actor List</button>
+                            </div>
+                        </div>
+
+                    {% else %}
+
+                        {% for l in form.report_actors %}
+                        <div style="padding:10px; border:1px solid #ccc">
+
+                            <div class="row" style="margin-bottom:3px">
+                                <div class="col-md-12">
+                                    <label>Actor</label>
+                                </div>
+                            </div>
+                            <div class="row" style="margin-bottom:5px">
+                                <div class="col-md-12">
+                                    {{ l.form.data(class="form-control", disabled=true) }}
+                                </div>
+                            </div>
+
+                            {% if l.form.data.data == "None" or l.form.data.data == "_NONE_" %}
+                            <div style="display:none">
+                            {% else %}
+                            <div>
+                            {% endif %}
+                                <div class="row" style="margin-bottom:3px">
+                                    <div class="col-md-12">
+                                        <label>Related Elements</label>
+                                    </div>
+                                </div>
+                                {% for m in l.form.related_elements %}
+                                <div class="row" style="margin-bottom:3px">
+                                    <div class="col-md-12">
+                                        {{ m.form.element_text(class="form-control", disabled=true) }}
+                                    </div>
+                                </div>
+                                {% endfor %}
+                            </div>
+                        </div>
+                        {% endfor %}
+
+                    {% endif %}
+                    </div>
+                </div>
+            </div>
+
+            <div class="form-group">
+                <label for="name">Related Reports</label> 
+                <div class="row" data-toggle="fieldset" id="related_reports-fieldset">
+                    <div class="col-md-12">
+                    {% if role=='ADD' or role=='EDIT' %}
+                        {% for l in form.report_reports %}
+
+                            <div data-toggle="fieldset-entry" style="margin-bottom:5px">
+                                <div style="padding:10px; border:1px solid #ccc">
+                                    <div class="row">
+                                        <div class="col-md-11">
+                                            <label>Select a Report</label>
+                                        </div>
+                                    </div>
+                                    <div class="row">
+                                        <div class="col-md-11">
+                                            {{ l.form.data(class="form-control related-select-field related-select-report-field", **{'data-element-type':'Report'}) }}
+                                        </div>
+                                        <div class="col-md-1" style="text-align:right">
+                                            <button type="button" class="btn btn-danger" data-toggle="fieldset-remove-row" id="related_reports-remove">&times;</button>
+                                        </div>
+                                    </div>
+                                    {% if l.form.data.errors %}
+                                        <div class="col-md-11 alert alert-danger">{% for error in l.form.data.errors %}{{ error }}<br/>{% endfor %}</div>
+                                    {% endif %}
+
+                                    {% if l.form.data.data == "None" or l.form.data.data == "_NONE_" %}
+                                    <div class="related-elements-wrapper" style="display:none">
+                                    {% else %}
+                                    <div class="related-elements-wrapper">
+                                    {% endif %}
+                                        <div class="row">
+                                            <div class="col-md-11">
+                                                <label style="margin-top:6px">Which elements relate to the chosen Report?</label>&nbsp;&nbsp;&nbsp;<button class="btn-xs btn-primary toggle-all" data-toggle="true" id="related_reports-toggle">Toggle All</button>
+                                            </div>
+                                        </div>
+                                        <div class="row" style="margin-bottom:5px">
+                                            <div class="col-md-11">
+                                                <div class="related-element-scroller" style="border:1px solid #ccc; height:80px; padding:5px; overflow:auto">
+                                                    <div class="related-element-top" style="height:0px"></div>
+                                                    <div class="related-elements">
+                                                        {% for m in l.form.related_elements %}
+                                                        <div class="element">
+                                                            {{ m.form.element }}
+                                                            {{ m.form.element.label }}
+                                                            {{ m.form.element_value }}
+                                                        </div>
+                                                        {% endfor %}
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            {% if l.form.data.errors %}
+                                <div class="col-md-11 alert alert-danger">{% for error in l.form.data.errors %}{{ error }}<br/>{% endfor %}</div>
+                            {% endif %}
+
+                        {% endfor %}
+
+                        <div class="row">
+                            <div class="col-md-12">
+                                <button type="button" class="btn btn-primary btn-sm" data-toggle="fieldset-add-row" data-target="#related_reports-fieldset"><span class="glyphicon glyphicon-plus"></span> Add Another Report</button>
+
+                                <a href="/report/add" target="_blank"><button type="button" class="btn btn-primary btn-sm">Create a new Report</button></a>
+
+                                <button type="button" class="btn btn-primary btn-sm list-refresh" data-target="related-select-report-field">Refresh Report List</button>
+                            </div>
+                        </div>
+
+                    {% else %}
+
+                        {% for l in form.report_reports %}
+                        <div style="padding:10px; border:1px solid #ccc">
+
+                            <div class="row" style="margin-bottom:3px">
+                                <div class="col-md-12">
+                                    <label>Report</label>
+                                </div>
+                            </div>
+                            <div class="row" style="margin-bottom:5px">
+                                <div class="col-md-12">
+                                    {{ l.form.data(class="form-control", disabled=true) }}
+                                </div>
+                            </div>
+
+                            {% if l.form.data.data == "None" or l.form.data.data == "_NONE_" %}
+                            <div style="display:none">
+                            {% else %}
+                            <div>
+                            {% endif %}
+                                <div class="row" style="margin-bottom:3px">
+                                    <div class="col-md-12">
+                                        <label>Related Elements</label>
+                                    </div>
+                                </div>
+                                {% for m in l.form.related_elements %}
+                                <div class="row" style="margin-bottom:3px">
+                                    <div class="col-md-12">
+                                        {{ m.form.element_text(class="form-control", disabled=true) }}
+                                    </div>
+                                </div>
+                                {% endfor %}
+                            </div>
+                        </div>
+                        {% endfor %}
+
+                    {% endif %}
+                    </div>
+                </div>
+            </div>
+
+            <div class="form-group">
+                <label for="name">Related TTPs</label> 
+                <div class="row" data-toggle="fieldset" id="related_ttps-fieldset">
+                    <div class="col-md-12">
+                    {% if role=='ADD' or role=='EDIT' %}
+                        {% for l in form.report_ttps %}
+
+                            <div data-toggle="fieldset-entry" style="margin-bottom:5px">
+                                <div style="padding:10px; border:1px solid #ccc">
+                                    <div class="row">
+                                        <div class="col-md-11">
+                                            <label>Select a TTP</label>
+                                        </div>
+                                    </div>
+                                    <div class="row">
+                                        <div class="col-md-11">
+                                            {{ l.form.data(class="form-control related-select-field related-select-ttp-field", **{'data-element-type':'TTP'}) }}
+                                        </div>
+                                        <div class="col-md-1" style="text-align:right">
+                                            <button type="button" class="btn btn-danger" data-toggle="fieldset-remove-row" id="related_ttps-remove">&times;</button>
+                                        </div>
+                                    </div>
+                                    {% if l.form.data.errors %}
+                                        <div class="col-md-11 alert alert-danger">{% for error in l.form.data.errors %}{{ error }}<br/>{% endfor %}</div>
+                                    {% endif %}
+
+                                    {% if l.form.data.data == "None" or l.form.data.data == "_NONE_" %}
+                                    <div class="related-elements-wrapper" style="display:none">
+                                    {% else %}
+                                    <div class="related-elements-wrapper">
+                                    {% endif %}
+                                        <div class="row">
+                                            <div class="col-md-11">
+                                                <label style="margin-top:6px">Which elements relate to the chosen TTP?</label>&nbsp;&nbsp;&nbsp;<button class="btn-xs btn-primary toggle-all" data-toggle="true"  id="related_ttps-toggle">Toggle All</button>
+                                            </div>
+                                        </div>
+                                        <div class="row" style="margin-bottom:5px">
+                                            <div class="col-md-11">
+                                                <div class="related-element-scroller" style="border:1px solid #ccc; height:80px; padding:5px; overflow:auto">
+                                                    <div class="related-element-top" style="height:0px"></div>
+                                                    <div class="related-elements">
+                                                        {% for m in l.form.related_elements %}
+                                                        <div class="element">
+                                                            {{ m.form.element }}
+                                                            {{ m.form.element.label }}
+                                                            {{ m.form.element_value }}
+                                                        </div>
+                                                        {% endfor %}
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            {% if l.form.data.errors %}
+                                <div class="col-md-11 alert alert-danger">{% for error in l.form.data.errors %}{{ error }}<br/>{% endfor %}</div>
+                            {% endif %}
+
+                        {% endfor %}
+
+                        <div class="row">
+                            <div class="col-md-12">
+                                <button type="button" class="btn btn-primary btn-sm" data-toggle="fieldset-add-row" data-target="#related_ttps-fieldset"><span class="glyphicon glyphicon-plus"></span> Add Another TTP</button>
+
+                                <a href="/ttp/add" target="_blank"><button type="button" class="btn btn-primary btn-sm">Create a new TTP</button></a>
+
+                                <button type="button" class="btn btn-primary btn-sm list-refresh" data-target="related-select-ttp-field">Refresh TTP List</button>
+                            </div>
+                        </div>
+
+                    {% else %}
+                    
+                        {% for l in form.report_ttps %}
+                        <div style="padding:10px; border:1px solid #ccc">
+
+                            <div class="row" style="margin-bottom:3px">
+                                <div class="col-md-12">
+                                    <label>TTP</label>
+                                </div>
+                            </div>
+                            <div class="row" style="margin-bottom:5px">
+                                <div class="col-md-12">
+                                    {{ l.form.data(class="form-control", disabled=true) }}
+                                </div>
+                            </div>
+
+                            {% if l.form.data.data == "None" or l.form.data.data == "_NONE_" %}
+                            <div style="display:none">
+                            {% else %}
+                            <div>
+                            {% endif %}
+                                <div class="row" style="margin-bottom:3px">
+                                    <div class="col-md-12">
+                                        <label>Related Elements</label>
+                                    </div>
+                                </div>
+                                {% for m in l.form.related_elements %}
+                                <div class="row" style="margin-bottom:3px">
+                                    <div class="col-md-12">
+                                        {{ m.form.element_text(class="form-control", disabled=true) }}
+                                    </div>
+                                </div>
+                                {% endfor %}
+                            </div>
+                        </div>
+                        {% endfor %}
+                    {% endif %}
+                    </div>
+                </div>
+            </div>
+
+            <!--
+            END RELATED ELEMENTS
+            -->
+
+
+            <div class="form-group" style="text-align:right;margin-top:20px">
+                {% if role=='ADD' %}
+                    <button type="submit" class="btn btn-success">Add New Report</button>
+                {% elif role=='EDIT' %}
+                    <button type="submit" class="btn btn-success">Save</button>
+                {% else %}
+                    &nbsp;
+                {% endif %}
+            </div>
+        </form>
+    </div>
+</div>
+
+{% endblock %}
+
+{% block javascript %}
+<script>
+function elementChange(){
+
+    var related_elements = []
+    var related_elements_dict = {}
+    var delim = ":::"
+
+    $(".related-text").each(function(){
+        var text = $(this).val()
+        console.log($(this).attr('id') + " " + text)
+
+        var ipv4 = text.match(/\b([1-9]?\d|1\d\d|2[0-4]\d|25[0-5])\.([1-9]?\d|1\d\d|2[0-4]\d|25[0-5])\.([1-9]?\d|1\d\d|2[0-4]\d|25[0-5])\.([1-9]?\d|1\d\d|2[0-4]\d|25[0-5])\b/g);
+
+        console.log(ipv4)
+        for (var i in ipv4){
+            t = "IPv4"
+            v = ipv4[i]
+
+            var display_text = t + " - " + v
+            if (!contains(related_elements,display_text)){
+                related_elements.push(display_text)
+                related_elements_dict[display_text] = t + delim + v
+            }
+        }
+
+        var email = text.match(/\b([-0-9a-zA-Z.+_]+@[-0-9a-zA-Z.+_]+\.[a-zA-Z]{2,4})\b/g);
+
+        console.log(email)
+        for (var i in email){
+            t = "Email"
+            v = email[i]
+
+            var display_text = t + " - " + v
+            if (!contains(related_elements,display_text)){
+                related_elements.push(display_text)
+                related_elements_dict[display_text] = t + delim + "CommAddr" + delim + v
+            }
+        }
+
+        var fqdn = text.match(/\b(([a-z0-9\-]{2,}\.)+(abogado|ac|academy|accountants|active|actor|ad|adult|ae|aero|af|ag|agency|ai|airforce|al|allfinanz|alsace|am|amsterdam|an|android|ao|aq|aquarelle|ar|archi|army|arpa|as|asia|associates|at|attorney|au|auction|audio|autos|aw|ax|axa|az|ba|band|bank|bar|barclaycard|barclays|bargains|bayern|bb|bd|be|beer|berlin|best|bf|bg|bh|bi|bid|bike|bingo|bio|biz|bj|black|blackfriday|bloomberg|blue|bm|bmw|bn|bnpparibas|bo|boo|boutique|br|brussels|bs|bt|budapest|build|builders|business|buzz|bv|bw|by|bz|bzh|ca|cal|camera|camp|cancerresearch|canon|capetown|capital|caravan|cards|care|career|careers|cartier|casa|cash|cat|catering|cc|cd|center|ceo|cern|cf|cg|ch|channel|chat|cheap|christmas|chrome|church|ci|citic|city|ck|cl|claims|cleaning|click|clinic|clothing|club|cm|cn|co|coach|codes|coffee|college|cologne|com|community|company|computer|condos|construction|consulting|contractors|cooking|cool|coop|country|cr|credit|creditcard|cricket|crs|cruises|cu|cuisinella|cv|cw|cx|cy|cymru|cz|dabur|dad|dance|dating|day|dclk|de|deals|degree|delivery|democrat|dental|dentist|desi|design|dev|diamonds|diet|digital|direct|directory|discount|dj|dk|dm|dnp|do|docs|domains|doosan|durban|dvag|dz|eat|ec|edu|education|ee|eg|email|emerck|energy|engineer|engineering|enterprises|equipment|er|es|esq|estate|et|eu|eurovision|eus|events|everbank|exchange|expert|exposed|fail|farm|fashion|feedback|fi|finance|financial|firmdale|fish|fishing|fit|fitness|fj|fk|flights|florist|flowers|flsmidth|fly|fm|fo|foo|forsale|foundation|fr|frl|frogans|fund|furniture|futbol|ga|gal|gallery|garden|gb|gbiz|gd|ge|gent|gf|gg|ggee|gh|gi|gift|gifts|gives|gl|glass|gle|global|globo|gm|gmail|gmo|gmx|gn|goog|google|gop|gov|gp|gq|gr|graphics|gratis|green|gripe|gs|gt|gu|guide|guitars|guru|gw|gy|hamburg|hangout|haus|healthcare|help|here|hermes|hiphop|hiv|hk|hm|hn|holdings|holiday|homes|horse|host|hosting|house|how|hr|ht|hu|ibm|id|ie|ifm|il|im|immo|immobilien|in|industries|info|ing|ink|institute|insure|int|international|investments|io|iq|ir|irish|is|it|iwc|jcb|je|jetzt|jm|jo|jobs|joburg|jp|juegos|kaufen|kddi|ke|kg|kh|ki|kim|kitchen|kiwi|km|kn|koeln|kp|kr|krd|kred|kw|ky|kyoto|kz|la|lacaixa|land|lat|latrobe|lawyer|lb|lc|lds|lease|legal|lgbt|li|lidl|life|lighting|limited|limo|link|lk|loans|london|lotte|lotto|lr|ls|lt|ltda|lu|luxe|luxury|lv|ly|ma|madrid|maison|management|mango|market|marketing|marriott|mc|md|me|media|meet|melbourne|meme|memorial|menu|mg|mh|miami|mil|mini|mk|ml|mm|mn|mo|mobi|moda|moe|monash|money|mormon|mortgage|moscow|motorcycles|mov|mp|mq|mr|ms|mt|mu|museum|mv|mw|mx|my|mz|na|nagoya|name|navy|nc|ne|net|network|neustar|new|nexus|nf|ng|ngo|nhk|ni|ninja|nl|no|np|nr|nra|nrw|ntt|nu|nyc|nz|okinawa|om|one|ong|onl|ooo|org|organic|osaka|otsuka|ovh|pa|paris|partners|parts|party|pe|pf|pg|ph|pharmacy|photo|photography|photos|physio|pics|pictures|pink|pizza|pk|pl|place|plumbing|pm|pn|pohl|poker|porn|post|pr|praxi|press|pro|prod|productions|prof|properties|property|ps|pt|pub|pw|qa|qpon|quebec|re|realtor|recipes|red|rehab|reise|reisen|reit|ren|rentals|repair|report|republican|rest|restaurant|reviews|rich|rio|rip|ro|rocks|rodeo|rs|rsvp|ru|ruhr|rw|ryukyu|sa|saarland|sale|samsung|sarl|sb|sc|sca|scb|schmidt|schule|schwarz|science|scot|sd|se|services|sew|sexy|sg|sh|shiksha|shoes|shriram|si|singles|sj|sk|sky|sl|sm|sn|so|social|software|sohu|solar|solutions|soy|space|spiegel|sr|st|style|su|supplies|supply|support|surf|surgery|suzuki|sv|sx|sy|sydney|systems|sz|taipei|tatar|tattoo|tax|tc|td|technology|tel|temasek|tennis|tf|tg|th|tienda|tips|tires|tirol|tj|tk|tl|tm|tn|to|today|tokyo|tools|top|toshiba|town|toys|tp|tr|trade|training|travel|trust|tt|tui|tv|tw|tz|ua|ug|uk|university|uno|uol|us|uy|uz|va|vacations|vc|ve|vegas|ventures|versicherung|vet|vg|vi|viajes|video|villas|vision|vlaanderen|vn|vodka|vote|voting|voto|voyage|vu|wales|wang|watch|webcam|website|wed|wedding|wf|whoswho|wien|wiki|williamhill|wme|work|works|world|ws|wtc|wtf|xxx|xyz|yachts|yandex|ye|yoga|yokohama|youtube|yt|za|zm|zone|zuerich|zw))\b/g)
+
+        console.log(fqdn)
+        for (var i in fqdn){
+            t = "FQDN"
+            v = fqdn[i]
+
+            var display_text = t + " - " + v
+            if (!contains(related_elements,display_text)){
+                related_elements.push(display_text)
+                related_elements_dict[display_text] = t + delim + v
+            }
+        }
+    });
+
+    console.log(related_elements)
+
+    populateRelatedElements(related_elements, related_elements_dict)
+}
+
+$(document).ready(function(){
+
+    $('.related-text').on('change',function(){
+        console.log("Text changed")
+        elementChange()
+    });
+
+
+    $('.related-select-field').on('change', function(){
+        console.log($(this).val())
+        if ( $(this).val() != '_NONE_'){
+            console.log($(this).parent(3).html())
+            $(this).parents().eq(3).find(".related-elements-wrapper").show()
+        }
+        else{
+            $(this).parents().eq(3).find(".related-elements-wrapper").hide()
+        }
+    })
+
+});
+</script>
+{% endblock %}

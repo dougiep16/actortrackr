@@ -1,0 +1,20 @@
+{% set page_title="Forbidden" %}
+{% extends "layouts/base.html" %}
+{% block container %}
+
+{% if error %}
+<div class="alert alert-danger">
+    {{ error }}
+</div>
+{% endif %}
+
+<div class="row">
+    <div class="col-md-12">
+        {% if session['logged_in'] %}
+        Your account does not have permission to perform this action. If you feel you should, send an email to ctig@lgscout.com
+        {% else %}
+        You must <a href="/user/login/">log in</a> and have an account with permission to perform this action
+        {% endif %}
+    </div>
+</div>
+{% endblock %}
