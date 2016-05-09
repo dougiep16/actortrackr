@@ -39,15 +39,21 @@ logger_prefix = "index.py:"
 @index_blueprint.route("/about", methods = ['GET'])
 @authentication.access(authentication.PUBLIC)
 def about():
+    search_form = forms.searchForm()
+
     return render_template("about.html",
-                        page_title="About"
+                        page_title="About",
+                        search_form = search_form
             )
 
 @index_blueprint.route("/contact", methods = ['GET'])
 @authentication.access(authentication.PUBLIC)
 def contact():
+    search_form = forms.searchForm()
+
     return render_template("contact.html",
-                        page_title="Contact"
+                        page_title="Contact",
+                        search_form = search_form
             )
 
 @index_blueprint.route("/", methods = ['GET','POST'])

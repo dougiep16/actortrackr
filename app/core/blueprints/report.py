@@ -439,6 +439,7 @@ def add(template=None):
     error = None
     try:
         form = forms.reportForm(request.form)
+        search_form = forms.searchForm()
 
         if request.method == 'POST':
             #trick the form validation into working with our dynamic drop downs
@@ -485,7 +486,8 @@ def add(template=None):
     return render_template("report.html",
                         page_title="Add New Report",
                         role="ADD",
-                        form=form
+                        form=form,
+                        search_form=search_form
             )
 
 @report_blueprint.route("/view/<report_id>")
@@ -498,6 +500,7 @@ def view(report_id):
     error = None
     try:
         form = es_to_form(report_id)
+        search_form = forms.searchForm()
     except Exception as e:
         error = "There was an error completing your request. Details: {}".format(e)
         flash(error,'danger')
@@ -510,7 +513,8 @@ def view(report_id):
                         page_title="View Report",
                         role="VIEW",
                         report_id=report_id,
-                        form=form
+                        form=form,
+                        search_form=search_form
             )
 
 
@@ -525,6 +529,7 @@ def edit(report_id):
     try:
         if request.method == 'POST':
             form = forms.reportForm(request.form)
+            search_form = forms.searchForm()
 
             #trick the form validation into working with our dynamic drop downs
             for sub_form in form.report_class:
@@ -565,7 +570,8 @@ def edit(report_id):
                         page_title="Edit Report",
                         role="EDIT",
                         report_id=report_id,
-                        form=form
+                        form=form,
+                        search_form=search_form
             )
 
 @report_blueprint.route("/export/<report_id>")

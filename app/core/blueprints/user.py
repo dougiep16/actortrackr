@@ -46,6 +46,7 @@ def register():
     try:
 
         form = forms.registerForm(request.form)
+        search_form = forms.searchForm()
 
         if request.method == 'POST':
 
@@ -115,14 +116,18 @@ def register():
 
     return render_template("register.html",
                         page_title="Register",
-                        form=form
+                        form=form,
+                        search_form=search_form
             )
 
 @user_blueprint.route("/issues", methods = ['GET'])
 @user_blueprint.route("/issues/", methods = ['GET']) 
 def issues():
+    search_form = forms.searchForm()
+
     return render_template("issues.html",
-                        page_title="Trouble Logging In"
+                        page_title="Trouble Logging In",
+                        search_form=search_form
             )
 
 @user_blueprint.route("/password/request_reset", methods = ['GET','POST'])
@@ -132,6 +137,7 @@ def password_request_reset():
     log.info(logging_prefix + "Starting")
     try:
         form = forms.userEmailForm(request.form)
+        search_form = forms.searchForm()
 
         if request.method == 'POST':
             if form.validate():
@@ -172,7 +178,8 @@ def password_request_reset():
     return render_template("password_reset.html",
                         page_title="Reset Your Password",
                         page_type="REQUEST",
-                        form=form
+                        form=form,
+                        search_form=search_form
             )
 
 @user_blueprint.route("/password/reset/<user_id>/<expiration_ts>/<password_reset_hash>", methods = ['GET','POST'])
@@ -187,6 +194,7 @@ def password_reset(user_id=None, expiration_ts=None, password_reset_hash=None):
             return redirect("/user/password/request_reset/")
 
         form = forms.passwordPerformResetForm(request.form)
+        search_form = forms.searchForm()
 
         now = int(time.time())
 
@@ -232,7 +240,8 @@ def password_reset(user_id=None, expiration_ts=None, password_reset_hash=None):
     return render_template("password_reset.html",
                         page_title="Reset Your Password",
                         page_type="PERFORM",
-                        form=form
+                        form=form,
+                        search_form=search_form
             )
 
 @user_blueprint.route("/login", methods = ['GET','POST'])
@@ -243,6 +252,7 @@ def login():
 
     try:
         form = forms.loginForm(request.form)
+        search_form = forms.searchForm()
 
         if request.method == 'POST':
             if form.validate():
@@ -307,7 +317,8 @@ def login():
 
     return render_template("login.html",
                         page_title="Login",
-                        form=form
+                        form=form,
+                        search_form=search_form
             ) 
 
 @user_blueprint.route("/logout", methods = ['GET'])
@@ -383,6 +394,7 @@ def reverify():
     log.info(logging_prefix + "Starting")
     try:
         form = forms.userEmailForm(request.form)
+        search_form = forms.searchForm()
 
         if request.method == 'POST':
             if form.validate():
@@ -411,7 +423,8 @@ def reverify():
 
     return render_template("account_reverify.html",
                         page_title="Verify Account",
-                        form=form
+                        form=form,
+                        search_form=search_form
             )
 
 

@@ -79,13 +79,27 @@
             <!-- Collect the nav links, forms, and other content for toggling -->
             <div class="collapse navbar-collapse" id="bs-example-navbar-collapse-1">
                 <ul class="nav navbar-nav">
-                    <li>
-                        <a href="/about">About</a>
-                    </li>
-                    <li>
-                        <a href="/contact">Contact</a>
+                    <li class="dropdown">
+                        <a href="#" class="dropdown-toggle" data-toggle="dropdown">Menu <b class="caret"></b></a>
+                        <ul class="dropdown-menu">
+                            <li><a href="/about">About</a></li>
+                            <li><a href="/contact">Contact</a></li>
+                        </ul>
                     </li>
                 </ul>
+                {% if search_form and page_title != 'ActorTrackr' and page_title != 'View All'%}
+                <div class="col-sm-3 col-md-3">
+                    <form class="navbar-form" role="search" action="/" method="post">
+                    <div class="input-group">
+                        {{ search_form.hidden_tag() }}
+                        {{ search_form.query(class="form-control") }}
+                        <div class="input-group-btn">
+                            <button class="btn btn-default" type="submit"><i class="glyphicon glyphicon-search"></i></button>
+                        </div>
+                    </div>
+                    </form>
+                </div>
+                {% endif %}
                 <ul class="nav navbar-nav navbar-right">
                     {% if not session['logged_in'] %}
                     <li>
@@ -96,7 +110,7 @@
                     </li>
                     {% else %}
                     <li>
-                        <a href="javascript: return false">Logged in as {{ session['name'] }}</a>
+                        <a href="javascript: return false">{{ session['name'] }}</a>
                     </li>
                     <li>
                         <a href="/user/logout">Logout</a>
@@ -142,13 +156,11 @@
             <div class="row">
                 <div class="col-lg-6">
                     <p>Copyright &copy; Lookingglass Cyber Solutions, Inc 2016</p>
-                </div>
-                <div class="col-lg-6" style="text-align:right">
                     <p>
                         <a href="https://github.com/dougiep16/actortrackr" target="_blank">GitHub</a>&nbsp;&nbsp;|&nbsp;&nbsp;
-                        <a href="https://twitter.com/LG_CTIG" target="_blank">Twitter<a/>&nbsp;&nbsp;|&nbsp;&nbsp;
-                        <a href="http://deaddrop.threatpool.com" target="_blank">Deaddrop Blog</a><!--&nbsp;&nbsp;|&nbsp;&nbsp;
-                        <a href="/export">Export the data</a>-->
+                        <a href="https://twitter.com/LG_CTIG" target="_blank">Twitter</a>&nbsp;&nbsp;|&nbsp;&nbsp;
+                        <a href="http://deaddrop.threatpool.com" target="_blank">Deaddrop Blog</a>&nbsp;&nbsp;|&nbsp;&nbsp;
+                        <a href="/export">Export Elasticsearch</a>
                     </p>
                 </div>
             </div>

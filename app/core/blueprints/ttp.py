@@ -246,6 +246,7 @@ def add(template=None):
 
     try:
         form = forms.ttpForm(request.form)
+        search_form = forms.searchForm()
 
         if request.method == 'POST':
             #trick the form validation into working with our dynamic drop downs
@@ -291,7 +292,8 @@ def add(template=None):
     return render_template("ttp.html",
                         page_title="Add New TTP",
                         role="ADD",
-                        form=form
+                        form=form,
+                        search_form=search_form
             )
 
 @ttp_blueprint.route("/view/<ttp_id>")
@@ -303,6 +305,7 @@ def view(ttp_id):
 
     try:
         form = es_to_form(ttp_id)
+        search_form = forms.searchForm()
     except Exception as e:
         error = "There was an error completing your request. Details: {}".format(e)
         flash(error,'danger')
@@ -315,7 +318,8 @@ def view(ttp_id):
                         page_title="View TTP",
                         role="VIEW",
                         ttp_id=ttp_id,
-                        form=form
+                        form=form,
+                        search_form=search_form
             )
 
 @ttp_blueprint.route("/edit/<ttp_id>", methods = ['GET','POST'])
@@ -329,6 +333,7 @@ def edit(ttp_id):
     try:
         if request.method == 'POST':
             form = forms.ttpForm(request.form)
+            search_form = forms.searchForm()
 
             #trick the form validation into working with our dynamic drop downs
             for sub_form in form.ttp_class:
@@ -369,7 +374,8 @@ def edit(ttp_id):
                         page_title="Edit TTP",
                         role="EDIT",
                         ttp_id=ttp_id,
-                        form=form
+                        form=form,
+                        search_form=search_form
             )
 
 @ttp_blueprint.route("/export/<ttp_id>")

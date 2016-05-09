@@ -324,7 +324,7 @@ def es_to_tpx(actor_id):
         if i: #make sure its not blank
             observable_dict["attribute_c_map"]["aliases_s_array"].append(i)
 
-    observable_dict["attribute_c_map"]["communications_s_map"]  = {}
+    observable_dict["attribute_c_map"]["communications_c_map"]  = {}
     if "communication_address" in actor_data:
         for i in actor_data["communication_address"]:
             #build the key, this is a bit tricky if the user enters special characters,
@@ -333,11 +333,11 @@ def es_to_tpx(actor_id):
             # Example: Jabber -> jabber_s_array
             key = i['type'].lower().replace(" ","_") +"_s_array"
 
-            if key not in observable_dict["attribute_c_map"]["communications_s_map"]:
-                observable_dict["attribute_c_map"]["communications_s_map"][key] = []
+            if key not in observable_dict["attribute_c_map"]["communications_c_map"]:
+                observable_dict["attribute_c_map"]["communications_c_map"][key] = []
 
             if i['value']:
-                observable_dict["attribute_c_map"]["communications_s_map"][key].append(i['value'])
+                observable_dict["attribute_c_map"]["communications_c_map"][key].append(i['value'])
 
                 #this field is used in the element observable c array, lets keep track of it
                 field_name = "subject_address_s"
@@ -357,7 +357,7 @@ def es_to_tpx(actor_id):
                 if field_observable not in element_observables[field_name][field_type][field_data]:
                     element_observables[field_name][field_type][field_data].append(field_observable)
 
-    observable_dict["attribute_c_map"]["financial_accounts_s_map"]  = {}
+    observable_dict["attribute_c_map"]["financial_accounts_c_map"]  = {}
     if "financial_account" in actor_data:
         for i in actor_data["financial_account"]:
             #build the key, this is a bit tricky if the user enters special characters,
@@ -366,11 +366,11 @@ def es_to_tpx(actor_id):
             # Example: Jabber -> jabber_s_array
             key = i['type'].lower().replace(" ","_") +"_s_array"
 
-            if key not in observable_dict["attribute_c_map"]["financial_accounts_s_map"]:
-                observable_dict["attribute_c_map"]["financial_accounts_s_map"][key] = []
+            if key not in observable_dict["attribute_c_map"]["financial_accounts_c_map"]:
+                observable_dict["attribute_c_map"]["financial_accounts_c_map"][key] = []
 
             if i['value']:
-                observable_dict["attribute_c_map"]["financial_accounts_s_map"][key].append(i['value'])
+                observable_dict["attribute_c_map"]["financial_accounts_c_map"][key].append(i['value'])
 
     observable_dict["attribute_c_map"]["frequent_locations_s_array"]  = []
     for i in actor_data["frequented_location"]:
@@ -387,10 +387,10 @@ def es_to_tpx(actor_id):
 
     observable_dict["attribute_c_map"]["suspected_point_of_origin_s"]  = actor_data['origin']
     
-    observable_dict["attribute_c_map"]["infrastructure_ipv4_array"]  = []
+    observable_dict["attribute_c_map"]["infrastructure_ipv4_s_array"]  = []
     for i in actor_data["infrastructure"]["ipv4"]:
         if i:
-            observable_dict["attribute_c_map"]["infrastructure_ipv4_array"].append(i)
+            observable_dict["attribute_c_map"]["infrastructure_ipv4_s_array"].append(i)
 
             #this field is used in the element observable c array, lets keep track of it
             field_name = "subject_ipv4_s"
@@ -410,10 +410,10 @@ def es_to_tpx(actor_id):
             if field_observable not in element_observables[field_name][field_type][field_data]:
                 element_observables[field_name][field_type][field_data].append(field_observable)
     
-    observable_dict["attribute_c_map"]["infrastructure_fqdn_array"]  = []
+    observable_dict["attribute_c_map"]["infrastructure_fqdn_s_array"]  = []
     for i in actor_data["infrastructure"]["fqdn"]:
         if i:
-            observable_dict["attribute_c_map"]["infrastructure_fqdn_array"].append(i)
+            observable_dict["attribute_c_map"]["infrastructure_fqdn_s_array"].append(i)
 
             #this field is used in the element observable c array, lets keep track of it
             field_name = "subject_fqdn_s"
@@ -441,7 +441,7 @@ def es_to_tpx(actor_id):
     for i in actor_data["infrastructure"]["type"]:
         observable_dict["attribute_c_map"]["infrastructure_type_s_array"].append(i)
 
-    observable_dict["attribute_c_map"]["detection_s_map"]  = {}
+    observable_dict["attribute_c_map"]["detection_c_map"]  = {}
     for i in actor_data["detection_rule"]:
         #build the key, this is a bit tricky if the user enters special characters,
         #or has multiple spaces (possible trailing space, should address this when the
@@ -452,14 +452,13 @@ def es_to_tpx(actor_id):
         if not i['value']:
             continue
 
-        if key not in observable_dict["attribute_c_map"]["detection_s_map"]:
-            observable_dict["attribute_c_map"]["detection_s_map"][key] = {}
+        if key not in observable_dict["attribute_c_map"]["detection_c_map"]:
+            observable_dict["attribute_c_map"]["detection_c_map"][key] = {}
 
-        observable_dict["attribute_c_map"]["detection_s_map"][key][i['id']] = i['value']
+        observable_dict["attribute_c_map"]["detection_c_map"][key][i['id']] = i['value']
 
     '''
     Related elements
-    TODO: instead of s_arrays, should these be s_maps with name, and id?
     '''
 
     relate_element_name_map = {
@@ -469,10 +468,10 @@ def es_to_tpx(actor_id):
             "CommAddr" : "subject_address_s"
         }
 
-    observable_dict["attribute_c_map"]["ttp_s_array"]  = []
+    observable_dict["attribute_c_map"]["related_ttps_c_array"]  = []
     for i in actor_data['related_ttp']:
         if i['name']:
-            observable_dict["attribute_c_map"]["ttp_s_array"].append(i['name'])
+            observable_dict["attribute_c_map"]["related_ttps_c_array"].append({ "name_s" :  i['name'], "uuid_s" : i['id'] })
             field_observable = i['name']
 
             for j in i['elements']:
@@ -502,10 +501,10 @@ def es_to_tpx(actor_id):
                     element_observables[field_name][field_type][field_data].append(field_observable)
 
 
-    observable_dict["attribute_c_map"]["actor_s_array"]  = []
+    observable_dict["attribute_c_map"]["related_actors_c_array"]  = []
     for i in actor_data['related_actor']:
         if i['name']:
-            observable_dict["attribute_c_map"]["actor_s_array"].append(i['name'])
+            observable_dict["attribute_c_map"]["related_actors_c_array"].append({ "name_s" :  i['name'], "uuid_s" : i['id'] })
             field_observable = i['name']
 
             for j in i['elements']:
@@ -534,10 +533,10 @@ def es_to_tpx(actor_id):
                 if field_observable not in element_observables[field_name][field_type][field_data]:
                     element_observables[field_name][field_type][field_data].append(field_observable)
 
-    observable_dict["attribute_c_map"]["report_s_array"]  = []
+    observable_dict["attribute_c_map"]["related_reports_c_array"]  = []
     for i in actor_data['related_report']:
         if i['name']:
-            observable_dict["attribute_c_map"]["report_s_array"].append(i['name'])
+            observable_dict["attribute_c_map"]["related_reports_c_array"].append({ "name_s" :  i['name'], "uuid_s" : i['id'] })
             field_observable = i['name']
 
             for j in i['elements']:
@@ -568,68 +567,6 @@ def es_to_tpx(actor_id):
 
 
     tpx["observable_dictionary_c_array"].append(observable_dict)
-
-    #Query related TTPs and add those to the observable dict
-
-        
-
-    '''
-    for i in actor_data['related_ttp']:
-        if i['name'] == "":
-            continue
-
-        #get the data from ES
-        related_ttp_results = es.get(ES_PREFIX + "threat_actor_related_observables", doc_type="ttp", id=i['name'])
-
-        related_ttp_results = related_ttp_results["_source"]
-
-        observable_dict = {}
-        observable_dict["observable_id_s"] = related_ttp_results["name"]
-        observable_dict["criticality_i"] = related_ttp_results["criticality"]
-        observable_dict["description_s"] = related_ttp_results["description"]
-
-        observable_dict["classification_c_array"] = []
-
-        class_dict = {}
-        class_dict["score_i"] = 70
-        class_dict["classification_id_s"] = "Intel"
-        class_dict["classification_family_s"] = "TTP"
-        observable_dict["classification_c_array"].append(class_dict)
-
-        for c in related_ttp_results['classification']:
-            class_dict = {}
-            class_dict["score_i"] = c["score"]
-            class_dict["classification_id_s"] = c["id"]
-            class_dict["classification_family_s"] = c["family"]
-            observable_dict["classification_c_array"].append(class_dict)
-
-        tpx["observable_dictionary_c_array"].append(observable_dict)
-
-        for e in i['elements']:
-            e_array = e.split(":::")
-
-            field_name = relate_element_name_map[e_array[0]]
-            field_observable = related_ttp_results["name"]
-
-            if len(e_array) == 2:
-                field_type = "_DEFAULT_"
-                field_data = e_array[1]
-            else:
-                field_type = e_array[1]
-                field_data = e_array[2]
-
-            if field_name not in element_observables:
-                element_observables[field_name] = {}
-
-            if field_type not in element_observables[field_name]:
-                element_observables[field_name][field_type] = {}
-
-            if field_data not in element_observables[field_name][field_type]:
-                element_observables[field_name][field_type][field_data] = []
-
-            if field_observable not in element_observables[field_name][field_type][field_data]:
-                element_observables[field_name][field_type][field_data].append(field_observable)
-    '''
 
     tpx["element_observable_c_array"] = []
 
@@ -1014,6 +951,7 @@ def add(template=None):
     try:
         populate_simple_choices()
         form = forms.actorForm(request.form)
+        search_form = forms.searchForm()
 
         if request.method == 'POST':
             #trick the form validation into working with our dynamic drop downs
@@ -1062,7 +1000,8 @@ def add(template=None):
     return render_template("actor.html",
                         page_title="Add New Actor",
                         role="ADD",
-                        form=form
+                        form=form,
+                        search_form = search_form
             )
 
 @actor_blueprint.route("/view/<actor_id>")
@@ -1075,6 +1014,8 @@ def view(actor_id):
     try:
         populate_simple_choices()
         form = es_to_form(actor_id)
+
+        search_form = forms.searchForm()
     except Exception as e:
         error = "There was an error completing your request. Details: {}".format(e)
         flash(error,'danger')
@@ -1087,7 +1028,8 @@ def view(actor_id):
                         page_title="View Actor",
                         role="VIEW",
                         actor_id=actor_id,
-                        form=form
+                        form=form,
+                        search_form = search_form
             )
 
 @actor_blueprint.route("/edit/<actor_id>", methods = ['GET','POST'])
@@ -1100,6 +1042,7 @@ def edit(actor_id):
     try:
         populate_simple_choices()
         form = forms.actorForm(request.form)
+        search_form = forms.searchForm()
 
         if request.method == 'POST':
             #trick the form validation into working with our dynamic drop downs
@@ -1135,7 +1078,8 @@ def edit(actor_id):
                         page_title="Edit Actor",
                         role="EDIT",
                         actor_id=actor_id,
-                        form=form
+                        form=form,
+                        search_form = search_form
             )
 
 @actor_blueprint.route("/export/<actor_id>")
