@@ -111,8 +111,9 @@ def es_to_tpx(ttp_id):
     tpx["observable_dictionary_c_array"] = []
 
     observable_dict = {}
-    observable_dict["observable_id_s"] = ttp_data['name']
     observable_dict["ttp_uuid_s"] = ttp_id
+    observable_dict["observable_id_s"] = ttp_data['name']
+    observable_dict["description_s"]  = ttp_data['description']
     observable_dict["criticality_i"] = ttp_data['criticality']
 
     observable_dict["classification_c_array"] = []
@@ -132,7 +133,35 @@ def es_to_tpx(ttp_id):
         if class_dict not in observable_dict["classification_c_array"]:
             observable_dict["classification_c_array"].append(class_dict)
 
-    observable_dict["description_s"]  = ttp_data['description']
+    observable_dict["related_ttps_c_array"]  = []
+    for i in ttp_data['related_ttp']:
+        if i['name']:
+            observable_dict["related_ttps_c_array"].append({ "name_s" :  i['name'], "uuid_s" : i['id'] })
+
+
+    observable_dict["related_actors_c_array"]  = []
+    for i in ttp_data['related_actor']:
+        if i['name']:
+            observable_dict["related_actors_c_array"].append({ "name_s" :  i['name'], "uuid_s" : i['id'] })
+
+    observable_dict["related_reports_c_array"]  = []
+    for i in ttp_data['related_report']:
+        if i['name']:
+            observable_dict["related_reports_c_array"].append({ "name_s" :  i['name'], "uuid_s" : i['id'] })
+
+
+    '''
+    Related elements
+    '''
+
+    relate_element_name_map = {
+            "FQDN" : "subject_fqdn_s",
+            "IPv4" : "subject_ipv4_s",
+            "TTP" : "subject_ttp_s",
+            "CommAddr" : "subject_address_s"
+        }
+
+
 
     tpx["observable_dictionary_c_array"].append(observable_dict)
 

@@ -13,6 +13,7 @@ import json
 import hashlib
 import logging
 import os
+import re
 import sys
 import time
 import uuid
@@ -217,7 +218,7 @@ def es_to_tpx(report_id):
 
     observable_dict = {}
     observable_dict["observable_id_s"] = report_data['name']
-    observable_dict["ttp_uuid_s"] = report_id
+    observable_dict["report_uuid_s"] = report_id
     observable_dict["criticality_i"] = report_data['criticality']
 
     observable_dict["classification_c_array"] = []
@@ -238,7 +239,7 @@ def es_to_tpx(report_id):
     observable_dict["report_s_map"]["reliability_s"] = report_data["source_reliability"] + str(report_data["info_reliability"])
     observable_dict["report_s_map"]["title_s"] = report_data['name'] 
 
-    observable_dict["report_s_map"]["sections_s_map_array"] = []
+    observable_dict["report_s_map"]["sections_c_array"] = []
     for i in report_data['section']:
 
         section_dict = {}
@@ -247,10 +248,174 @@ def es_to_tpx(report_id):
         section_dict["section_order_i"] = i["order"]
         section_dict["section_content_s"] = i["content"]
 
-        observable_dict["report_s_map"]["sections_s_map_array"].append(section_dict)
+        observable_dict["report_s_map"]["sections_c_array"].append(section_dict)
+
+    '''
+    Related elements
+    '''
+
+    relate_element_name_map = {
+            "FQDN" : "subject_fqdn_s",
+            "IPv4" : "subject_ipv4_s",
+            "TTP" : "subject_ttp_s",
+            "CommAddr" : "subject_address_s"
+        }
+
+    for i in report_data['related_element_choices']:
+        v = i['value']
+
+        print(v)
+
+        v_array = v.split(":::")
+
+        if len(v_array) == 2:
+            field_name = relate_element_name_map[v_array[0]]
+            field_type = "_DEFAULT_"
+            field_data = v_array[1]
+        elif len(v_array) == 3:
+            field_name = relate_element_name_map[v_array[1]]
+            field_type = v_array[0]
+            field_data = v_array[2]
+        else:
+            raise Exception("Unknown Related Element: '{}'".format(v))
+
+        #this field is used in the element observable c array, lets keep track of it
+        
+        field_observable = report_data['name']
+        
+        if field_name not in element_observables:
+            element_observables[field_name] = {}
+
+        if field_type not in element_observables[field_name]:
+            element_observables[field_name][field_type] = {}
+
+        if field_data not in element_observables[field_name][field_type]:
+            element_observables[field_name][field_type][field_data] = []
+
+        if field_observable not in element_observables[field_name][field_type][field_data]:
+            element_observables[field_name][field_type][field_data].append(field_observable)
+
+
+    observable_dict["report_s_map"]["related_ttps_c_array"]  = []
+    for i in report_data['related_ttp']:
+        if i['name']:
+            observable_dict["report_s_map"]["related_ttps_c_array"].append({ "name_s" :  i['name'], "uuid_s" : i['id'] })
+            field_observable = i['name']
+
+            for j in i['elements']:
+                element_array = j.split(":::")
+
+                if len(element_array) == 3:
+                    field_type = element_array[0]
+                    field_name = relate_element_name_map[element_array[1]]
+                    field_data = element_array[2]
+                elif len(element_array) == 2:
+                    field_type = "_DEFAULT_"
+                    field_name = relate_element_name_map[element_array[0]]
+                    field_data = element_array[1]
+                else:
+                    raise Exception("Invalid element '{}'".format(j))
+
+                if field_name not in element_observables:
+                    element_observables[field_name] = {}
+
+                if field_type not in element_observables[field_name]:
+                    element_observables[field_name][field_type] = {}
+
+                if field_data not in element_observables[field_name][field_type]:
+                    element_observables[field_name][field_type][field_data] = []
+
+                if field_observable not in element_observables[field_name][field_type][field_data]:
+                    element_observables[field_name][field_type][field_data].append(field_observable)
+
+
+    observable_dict["report_s_map"]["related_actors_c_array"]  = []
+    for i in report_data['related_actor']:
+        if i['name']:
+            observable_dict["report_s_map"]["related_actors_c_array"].append({ "name_s" :  i['name'], "uuid_s" : i['id'] })
+            field_observable = i['name']
+
+            for j in i['elements']:
+                element_array = j.split(":::")
+
+                if len(element_array) == 3:
+                    field_type = element_array[0]
+                    field_name = relate_element_name_map[element_array[1]]
+                    field_data = element_array[2]
+                elif len(element_array) == 2:
+                    field_type = "_DEFAULT_"
+                    field_name = relate_element_name_map[element_array[0]]
+                    field_data = element_array[1]
+                else:
+                    raise Exception("Invalid element '{}'".format(j))
+
+                if field_name not in element_observables:
+                    element_observables[field_name] = {}
+
+                if field_type not in element_observables[field_name]:
+                    element_observables[field_name][field_type] = {}
+
+                if field_data not in element_observables[field_name][field_type]:
+                    element_observables[field_name][field_type][field_data] = []
+
+                if field_observable not in element_observables[field_name][field_type][field_data]:
+                    element_observables[field_name][field_type][field_data].append(field_observable)
+
+    observable_dict["report_s_map"]["related_reports_c_array"]  = []
+    for i in report_data['related_report']:
+        if i['name']:
+            observable_dict["report_s_map"]["related_reports_c_array"].append({ "name_s" :  i['name'], "uuid_s" : i['id'] })
+            field_observable = i['name']
+
+            for j in i['elements']:
+                element_array = j.split(":::")
+
+                if len(element_array) == 3:
+                    field_type = element_array[0]
+                    field_name = relate_element_name_map[element_array[1]]
+                    field_data = element_array[2]
+                elif len(element_array) == 2:
+                    field_type = "_DEFAULT_"
+                    field_name = relate_element_name_map[element_array[0]]
+                    field_data = element_array[1]
+                else:
+                    raise Exception("Invalid element '{}'".format(j))
+
+                if field_name not in element_observables:
+                    element_observables[field_name] = {}
+
+                if field_type not in element_observables[field_name]:
+                    element_observables[field_name][field_type] = {}
+
+                if field_data not in element_observables[field_name][field_type]:
+                    element_observables[field_name][field_type][field_data] = []
+
+                if field_observable not in element_observables[field_name][field_type][field_data]:
+                    element_observables[field_name][field_type][field_data].append(field_observable)
 
     tpx["observable_dictionary_c_array"].append(observable_dict)
 
+    tpx["element_observable_c_array"] = []
+    for field,val in element_observables.items():
+        for sub_type, val1 in val.items():
+            for data, val2 in val1.items():
+                e_dict = {}
+
+                e_dict[field] = data
+
+                if sub_type != "_DEFAULT_":
+                    e_dict['type_s'] = sub_type
+
+                e_dict["threat_observable_c_map"] = {}
+                for observable_id in val2:
+                    e_dict["threat_observable_c_map"][observable_id] = {}
+
+                    e_dict["threat_observable_c_map"][observable_id]["occurred_at_t"] = report_data['created_milli']
+                    e_dict["threat_observable_c_map"][observable_id]["occurred_at_s"] = report_data['created_s']
+                    e_dict["threat_observable_c_map"][observable_id]["last_seen_t"] = report_data['last_updated_milli']
+                    e_dict["threat_observable_c_map"][observable_id]["last_seen_s"] = report_data['last_updated_s']
+
+                tpx["element_observable_c_array"].append(e_dict)
     return tpx
 
 def form_to_es(form, report_id):

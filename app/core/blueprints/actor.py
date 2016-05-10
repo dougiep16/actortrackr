@@ -339,24 +339,6 @@ def es_to_tpx(actor_id):
             if i['value']:
                 observable_dict["attribute_c_map"]["communications_c_map"][key].append(i['value'])
 
-                #this field is used in the element observable c array, lets keep track of it
-                field_name = "subject_address_s"
-                field_type = i['type']
-                field_data = i['value']
-                field_observable = actor_data['name']
-                
-                if field_name not in element_observables:
-                    element_observables[field_name] = {}
-
-                if field_type not in element_observables[field_name]:
-                    element_observables[field_name][field_type] = {}
-
-                if field_data not in element_observables[field_name][field_type]:
-                    element_observables[field_name][field_type][field_data] = []
-
-                if field_observable not in element_observables[field_name][field_type][field_data]:
-                    element_observables[field_name][field_type][field_data].append(field_observable)
-
     observable_dict["attribute_c_map"]["financial_accounts_c_map"]  = {}
     if "financial_account" in actor_data:
         for i in actor_data["financial_account"]:
@@ -391,47 +373,11 @@ def es_to_tpx(actor_id):
     for i in actor_data["infrastructure"]["ipv4"]:
         if i:
             observable_dict["attribute_c_map"]["infrastructure_ipv4_s_array"].append(i)
-
-            #this field is used in the element observable c array, lets keep track of it
-            field_name = "subject_ipv4_s"
-            field_type = "_DEFAULT_"
-            field_data = i
-            field_observable = actor_data['name']
-            
-            if field_name not in element_observables:
-                element_observables[field_name] = {}
-
-            if field_type not in element_observables[field_name]:
-                element_observables[field_name][field_type] = {}
-
-            if field_data not in element_observables[field_name][field_type]:
-                element_observables[field_name][field_type][field_data] = []
-
-            if field_observable not in element_observables[field_name][field_type][field_data]:
-                element_observables[field_name][field_type][field_data].append(field_observable)
     
     observable_dict["attribute_c_map"]["infrastructure_fqdn_s_array"]  = []
     for i in actor_data["infrastructure"]["fqdn"]:
         if i:
             observable_dict["attribute_c_map"]["infrastructure_fqdn_s_array"].append(i)
-
-            #this field is used in the element observable c array, lets keep track of it
-            field_name = "subject_fqdn_s"
-            field_type = "_DEFAULT_"
-            field_data = i
-            field_observable = actor_data['name']
-            
-            if field_name not in element_observables:
-                element_observables[field_name] = {}
-
-            if field_type not in element_observables[field_name]:
-                element_observables[field_name][field_type] = {}
-
-            if field_data not in element_observables[field_name][field_type]:
-                element_observables[field_name][field_type][field_data] = []
-
-            if field_observable not in element_observables[field_name][field_type][field_data]:
-                element_observables[field_name][field_type][field_data].append(field_observable)
 
     observable_dict["attribute_c_map"]["infrastructure_action_s"]  = actor_data["infrastructure"]["action"]
     observable_dict["attribute_c_map"]["infrastructure_operation_s"]  = actor_data["infrastructure"]["operation"]
@@ -467,6 +413,38 @@ def es_to_tpx(actor_id):
             "TTP" : "subject_ttp_s",
             "CommAddr" : "subject_address_s"
         }
+
+    for i in actor_data['related_element_choices']:
+        v = i['value']
+
+        print(v)
+
+        v_array = v.split(":::")
+
+        if len(v_array) == 2:
+            field_name = relate_element_name_map[v_array[0]]
+            field_type = "_DEFAULT_"
+            field_data = v_array[1]
+        elif len(v_array) == 3:
+            field_name = relate_element_name_map[v_array[1]]
+            field_type = v_array[0]
+            field_data = v_array[2]
+        else:
+            raise Exception("Unknown Related Element: '{}'".format(v))
+        
+        field_observable = actor_data['name']
+        
+        if field_name not in element_observables:
+            element_observables[field_name] = {}
+
+        if field_type not in element_observables[field_name]:
+            element_observables[field_name][field_type] = {}
+
+        if field_data not in element_observables[field_name][field_type]:
+            element_observables[field_name][field_type][field_data] = []
+
+        if field_observable not in element_observables[field_name][field_type][field_data]:
+            element_observables[field_name][field_type][field_data].append(field_observable)
 
     observable_dict["attribute_c_map"]["related_ttps_c_array"]  = []
     for i in actor_data['related_ttp']:
@@ -567,6 +545,10 @@ def es_to_tpx(actor_id):
 
 
     tpx["observable_dictionary_c_array"].append(observable_dict)
+
+    '''
+    Element Observables - the reverse linkage
+    '''
 
     tpx["element_observable_c_array"] = []
 
