@@ -1,4 +1,4 @@
-# actortrackr
+# ActorTrackr
 ActorTrackr is an open source web application for storing/searching/linking Actor related data.  The primary sources are from users and various public repositories. Examples of useful repos: APTNotes and "APT Groups and Operations" spreadsheet. Without the hard work of others, this application wouldn't be possible.  We hope to continue the usefulness by improving the search and linking of data stored in the system.
 
 We encourage users to contribute publicly available information here to facilitate sharing and create their own ActorTrackr internally for sensitive data.  If you extend the system and find your changes useful for others, please submit a pull request.
@@ -7,6 +7,7 @@ We encourage users to contribute publicly available information here to facilita
 See setup/setup_steps.sh for notes on how to install. Better instruction in work
 
 # License Info
+Copyright 2016 Lookingglass Cyber Solutions
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
