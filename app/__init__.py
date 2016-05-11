@@ -41,9 +41,14 @@ except Exception as e:
     exit(1)
 
 try:
+    from flask.ext.compress import Compress
+except Exception as e:
+    print("Error: {}\Flask compress library is not installed, try 'pip install flask-compress'".format(e))
+    exit(1)
+try:
     from elasticsearch import Elasticsearch
     from elasticsearch import exceptions
-except:
+except Exception as e:
     print("Error: {}\nElasticsearch library is not installed, try 'pip install elasticsearch'".format(e))
     exit(1)
 
@@ -72,6 +77,11 @@ es_tracer.addHandler(es_tracer_handler)
 
 app = Flask(__name__)
 app.secret_key = "Fgtqweds5ywDJsQW87uQnL"
+
+#configure gzip compression
+app.config['COMPRESS_LEVEL'] = 9
+app.config['COMPRESS_MIN_SIZE'] = 1
+Compress(app)
 
 def get_es():
     try:

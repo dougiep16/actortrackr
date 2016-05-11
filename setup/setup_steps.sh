@@ -56,9 +56,9 @@ rm get-pip.py
 # Python modules
 ###################################################################
 
-#these commands are for python 3.4 (for 2.7 drop 'python3.4 -m')
 python3.4 -m pip install flask #flask
 python3.4 -m pip install Flask-WTF #flask forms
+python3.4 -m pip install flask-compress #flask gzip compression extension
 python3.4 -m pip install requests #requests
 python3.4 -m pip install elasticsearch
 python3.4 -m pip install PyMySQL
