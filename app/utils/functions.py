@@ -67,7 +67,7 @@ def sendAccountApprovedEmail(user_email):
     to      = [ user_email, ]
     sender  = EMAIL_SENDER
     subject = "{}: Account Approved".format(APPLICATION_NAME)
-    body    = 'Your account for the {} {} has been approved<br/><br/>Click <a href="{}/user/login/">here</a> to log in.'.format(APPLICATION_DOMAIN, APPLICATION_ORG, APPLICATION_NAME)
+    body    = 'Your account for the {} {} has been approved<br/><br/>Click <a href="{}/user/login/">here</a> to log in.'.format(APPLICATION_ORG, APPLICATION_NAME, APPLICATION_DOMAIN)
 
     sendHTMLEmail(to, sender, subject, body)
 
@@ -81,7 +81,7 @@ def sendAccountDisapprovedEmail(user_email):
 
 def sendPasswordResetEmail(user_email, reset_link):
     to      = [ user_email, ]
-    sender  = "noreply_ctig@lookingglasscyber.com"
+    sender  = EMAIL_SENDER
     subject = "{}: Password Reset".format(APPLICATION_NAME)
     body    = 'To reset your password, click <a href="{}{}">here</a>'.format(APPLICATION_DOMAIN, reset_link)
 
@@ -90,7 +90,7 @@ def sendPasswordResetEmail(user_email, reset_link):
 
 def sendCustomEmail(user_email, subject, body):
     to      = [ user_email, ]
-    sender  = "noreply_ctig@lookingglasscyber.com"
+    sender  = EMAIL_SENDER
 
     sendPlainTextEmail(to, sender, subject, body)
 
