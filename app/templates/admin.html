@@ -9,10 +9,13 @@
                 <th>Name</th>
                 <th>Email</th>
                 <th>Company</th>
+                <th>Justification</th>
                 <th>Approved</th>
                 <th>Write</th>
                 <th>Delete</th>
                 <th>Admin</th>
+                <th>Created</th>
+                <th>Last Login</th>
                 <th>Actions</th>
             </tr>
         </thead>
@@ -27,6 +30,7 @@
                     {% endif %}
                 </td>
                 <td>{{ user['company']|e  }}</td>
+                <td>{{ user['justification']|e  }}</td>
                 <td align="center">
                     <button class="btn-xs {% if user['approved'] == 1 %}btn-success{% else %}btn-danger{% endif %} user-permission"  data-action="approve" data-user-id="{{ user['id'] }}" data-value="{% if user['approved'] == 1 %}0{% else %}1{% endif %}" data-user-c="{{ user['id_hash'] }}">&nbsp;</button>
                 </td>
@@ -39,10 +43,18 @@
                 <td align="center">
                     <button class="btn-xs {% if user['admin'] == 1 %}btn-success{% else %}btn-danger{% endif %} user-permission" data-action="admin_perm" data-user-id="{{ user['id'] }}" data-value="{% if user['admin'] == 1 %}0{% else %}1{% endif %}" data-user-c="{{ user['id_hash'] }}">&nbsp;</button>
                 </td>
-                <td align="center">
+                <td>{{ user['created']|e  }}</td>
+                <td>{{ user['last_login']|e  }}</td>
+                <td align="center" style="padding:8px 4px">
                     <a href="/admin/user/delete/{{ user['id'] }}/{{ user['id_hash'] }}/?_r={{ url }}" data-toggle="tooltip" title="Delete" onclick="return confirm('Are you sure you wish to permanently delete {{ user['name'] }}')">
                         <button type="button" class="btn btn-default btn-xs">
-                            <span class="glyphicon glyphicon-trash"></span> In Work
+                            <span class="glyphicon glyphicon-trash"></span>
+                        </button>
+                    </a>
+
+                    <a href="javascript:" class="email_user" data-toggle="tooltip" data-user-email="{{user['email']|e}}" title="Email User">
+                        <button  type="button" class="btn btn-default btn-xs">
+                            <span class="glyphicon glyphicon-envelope"></span>
                         </button>
                     </a>
                 </td>
@@ -50,6 +62,26 @@
             {% endfor %}
         </tbody>
     </table>
+</div>
+
+<div id="dialog-form" title="Email User" style="display:none">
+  <p class="validateTips">All form fields are required.</p>
+ 
+  <form>
+    <fieldset>
+      <label for="email">Email</label>
+      {{ email_user_form.message_email(class="form-control") }}
+
+      <label for="subject">Subject</label>
+      {{ email_user_form.message_subject(class="form-control") }}
+
+      <label for="password">Message</label>
+      {{ email_user_form.message_body(class="form-control") }}
+ 
+      <!-- Allow form submission with keyboard without duplicating the dialog button -->
+      <input type="submit" tabindex="-1" style="position:absolute; top:-1000px">
+    </fieldset>
+  </form>
 </div>
 {% else %}
 <div class="row">
@@ -63,6 +95,33 @@
 
 {% block javascript %}
 <script>
+
+function sendMessage() {
+    var email    = $("#message_email").val()
+    var subject  = $("#message_subject").val()
+    var body     = $("#message_body").val()
+
+    console.log(email + " " + subject + " " + body)
+
+    if (email.trim().length == 0 || subject.trim().length == 0 || body.trim().length == 0)
+    {
+        alert("All fields are required")
+    }
+    else
+    {
+        $.post("/admin/email/", { email : email, subject : subject, body : body}, function(result){
+            if (result['success'])
+            {
+                alert("Message Sent")
+            }
+            else
+            {
+                alert("Message Failed to send. Details: " + result["error"])
+            }
+        });
+    }
+}
+
 $(document).ready(function(){
 
     $(".user-permission").click(function(){
@@ -92,7 +151,30 @@ $(document).ready(function(){
                 alert("There was an error completing your request.")
             }
         });
-    })
+    });
+
+    email_user_dialog = $( "#dialog-form" ).dialog({
+      autoOpen: false,
+      height: 380,
+      width: 350,
+      modal: true,
+      buttons: {
+        "Send Message": sendMessage,
+        Cancel: function() {
+            email_user_dialog.dialog( "close" );
+        }
+      },
+      close: function() {
+        
+      }
+    });
+
+    $(".email_user").click(function(){
+        email_user_dialog.dialog( "open" );
+        $("#message_email").val($(this).data("user-email"))
+        $("#message_subject").val("")
+        $("#message_body").val("")
+    });
 });
 </script>
 {% endblock %}

@@ -426,6 +426,15 @@ class ttpForm(Form):
     #doc_id      = HiddenField()
 
 '''
+Admin Form Definitions
+'''
+
+class sendUserEmailForm(Form):
+    message_email       = StringField(validators=[DataRequired(),Email()], render_kw={"placeholder": "Enter the user's email"})
+    message_subject     = StringField(validators=[DataRequired()], render_kw={"placeholder": "Enter the email subject"})
+    message_body        = TextAreaField(validators=[DataRequired()], render_kw={"placeholder": "Enter the email body"})
+
+'''
 User Form Definitions
 '''
 
@@ -479,7 +488,8 @@ class registerForm(Form):
     user_email      = StringField(validators=[DataRequired(),Email(), Length(max=256)], render_kw={"placeholder": "Enter your email"})
     user_password   = PasswordField(validators=[DataRequired(), Length(min=7, max=256)], render_kw={"placeholder": "Enter your password"})
     user_password2  = PasswordField(validators=[EqualTo('user_password', message="Field must match Password")], render_kw={"placeholder": "Enter your password again"})
-    user_company    = StringField(validators=[Length(max=256)], render_kw={"placeholder": "Enter your compnay"})
+    user_company    = StringField(validators=[DataRequired(), Length(max=256)], render_kw={"placeholder": "Enter your company"})
+    user_reason     = StringField(validators=[DataRequired(), Length(max=1024)], render_kw={"placeholder": "Enter your reason for using ActorTrackr"})
 
 
     def validate(self):

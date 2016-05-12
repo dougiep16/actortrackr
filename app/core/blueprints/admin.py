@@ -92,6 +92,60 @@ def edit_user_permissions(action,value,user_id,user_c):
 
     return jsonify({ "success" : success, "new_value" : value })
 
+@admin_blueprint.route("/user/delete/<user_id>/<user_id_hash>", methods = ['GET'])
+@admin_blueprint.route("/user/delete/<user_id>/<user_id_hash>/", methods = ['GET'])
+@authentication.access(authentication.ADMIN)
+def user_delete(user_id, user_id_hash):
+    logging_prefix = logger_prefix + "user_delete({},{}) - ".format(user_id, user_id_hash)
+    log.info(logging_prefix + "Starting")
+
+    redirect_url = "/admin/"
+    try:
+        redirect_url = request.args.get("_r")
+        if not redirect_url:
+            log.warning(logging_prefix + "redirect_url not set, using default")
+            redirect_url = "/admin/"
+
+        #check user_id against user_id_hash and perform delete if match
+        if user_id_hash == sha256( SALTS['user'], user_id ):
+            #now delete the user
+            conn=get_mysql().cursor(DictCursor)
+            conn.execute("DELETE FROM users WHERE id=%s", (user_id,))
+            conn.close()
+            flash("The user has been deleted", "success")
+        else:
+            flash("Unable to delete user", "danger")
+        
+    except Exception as e:
+        error = "There was an error completing your request. Details: {}".format(e)
+        flash(error,'danger')
+        log.exception(logging_prefix + error)
+        
+    return redirect(redirect_url)
+
+
+@admin_blueprint.route("/email", methods = ['POST'])
+@admin_blueprint.route("/email/", methods = ['POST'])
+@authentication.access(authentication.ADMIN)
+def email_user():
+    
+    logging_prefix = logger_prefix + "email_user() - "
+    log.info(logging_prefix + "Starting")
+
+    try:
+        email = request.form['email']
+        subject = request.form['subject']
+        body = request.form['body']
+
+        log.debug("Email: {}, Subject: {}, Body: {}".format(email, subject, body))
+        sendCustomEmail(email, subject, body)
+    except Exception as e:
+        error = "There was an error completing your request. Details: {}".format(e)
+        log.exception(logging_prefix + error)
+
+        return jsonify({ 'success' : False, 'error' : str(e) })
+        
+    return jsonify({ 'success' : True })
 
 '''
 Admin Pages
@@ -106,13 +160,15 @@ def main():
 
     try:
         conn=get_mysql().cursor(DictCursor)
-        conn.execute("SELECT id, name, email, company, email_verified, approved, write_permission, delete_permission, admin FROM users ORDER BY created DESC")
+        conn.execute("SELECT id, name, email, company, justification, email_verified, approved, write_permission, delete_permission, admin, created, last_login FROM users ORDER BY created DESC")
 
         users = conn.fetchall()
         for user in users:
             user['id_hash'] = sha256( SALTS['user'], str(user['id']) )
 
         conn.close()
+
+        email_user_form = forms.sendUserEmailForm()
 
     except Exception as e:
         error = "There was an error completing your request. Details: {}".format(e)
@@ -122,8 +178,9 @@ def main():
 
     return render_template("admin.html",
                         page_title="Admin",
-                        url = "",
-                        users=users
+                        url = "/admin/",
+                        users=users,
+                        email_user_form = email_user_form
             )
 @admin_blueprint.route("/choices", methods = ['GET','POST'])
 @admin_blueprint.route("/choices/", methods = ['GET','POST'])

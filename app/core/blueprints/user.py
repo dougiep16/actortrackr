@@ -53,16 +53,18 @@ def register():
             #verify captcha
             perform_validate = True
             try:
-                captcha_value = request.form['g-recaptcha-response']
-                r = requests.post("https://www.google.com/recaptcha/api/siteverify", data={
-                        'secret': RECAPTCHA_PRIVATE_KEY,
-                        'response': request.form['g-recaptcha-response']
-                    })
-                r_json = json.loads(r.text)
+                if RECAPTCHA_ENABLED:
+                    captcha_value = request.form['g-recaptcha-response']
+                    r = requests.post("https://www.google.com/recaptcha/api/siteverify", data={
+                            'secret': RECAPTCHA_PRIVATE_KEY,
+                            'response': request.form['g-recaptcha-response']
+                        })
+                    r_json = json.loads(r.text)
 
-                if not r_json['success']:
-                    flash("Bots are not allowed",'danger')
-                    perform_validate = False
+                    if not r_json['success']:
+                        flash("Bots are not allowed",'danger')
+                        perform_validate = False
+
             except Exception as s:
                 log.exception(logging_prefix + "Error preforming captcha validation")
                 raise s
@@ -75,14 +77,15 @@ def register():
                 email = form.user_email.data 
                 password = form.user_password.data
                 company = form.user_company.data
+                reason = form.user_reason.data
 
                 #create the necessary hashes
                 salted_password = sha256(SALTS['user'],password)
                 verification_hash = sha256(SALTS['email_verification'], email)
 
                 #insert data into mysql
-                insert = "INSERT INTO users (email, password, name, company, email_verified, verification_hash) VALUES (%s,%s,%s,%s,%s,%s)"
-                values = (email, salted_password, name, company, 0, verification_hash)
+                insert = "INSERT INTO users (email, password, name, company, justification, email_verified, verification_hash) VALUES (%s,%s,%s,%s,%s,%s,%s)"
+                values = (email, salted_password, name, company, reason, 0, verification_hash)
                 log.info(logging_prefix + "Adding new user {}".format(values))
 
                 try:
@@ -117,6 +120,8 @@ def register():
     return render_template("register.html",
                         page_title="Register",
                         form=form,
+                        recaptcha_enabled=RECAPTCHA_ENABLED,
+                        recaptcha_key=RECAPTCHA_PUBLIC_KEY,
                         search_form=search_form
             )
 
@@ -265,7 +270,7 @@ def login():
                 #since email is unique
                 conn.execute("SELECT id, password, name, email_verified, approved, write_permission, delete_permission, admin FROM users WHERE email = %s", (email,))
                 user = conn.fetchone()
-                conn.close()
+                
 
                 if user:
             
@@ -294,7 +299,13 @@ def login():
                                                                             #now + 10 minutes of inactivity
                                                                             #each time this user loads a page
                                                                             #the expiration time gets now + 10m
- 
+
+                            #update last login timestamp
+                            conn=get_mysql().cursor(DictCursor)
+                            conn.execute("UPDATE users SET last_login=%s WHERE id = %s", (datetime.now(), user['id']))
+                            get_mysql().commit()
+                            conn.close()
+
                             flash("You have been logged in", "success")
 
                             if request.args.get("r"):
@@ -358,7 +369,7 @@ def verify(email, verification_hash):
 
     try:
         conn=get_mysql().cursor(DictCursor)
-        conn.execute("SELECT id, email, name, company FROM users WHERE verification_hash = %s", (verification_hash,))
+        conn.execute("SELECT id, email, name, company, justification FROM users WHERE verification_hash = %s", (verification_hash,))
         r = conn.fetchone()
         if not r:
             log.error(logging_prefix + "User with email '{}' was not found".format(email))
@@ -373,7 +384,7 @@ def verify(email, verification_hash):
             get_mysql().commit()
 
             #id, email, name, company
-            sendNewUserToApproveEmail(r['id'], r['email'],r['name'],r['company'])
+            sendNewUserToApproveEmail(r['id'], r['email'],r['name'],r['company'],r['justification'])
         else:
             log.warning(logging_prefix + "Unsuccessful validation of {}".format(email))
             flash("We were unable to verify your account",'danger')

@@ -20,8 +20,22 @@ Log Settings
 LOG_FILE = "/var/log/actortrackr/actortrackr.log"
 
 '''
+Email Settings
+'''
+
+#the email address of the sender
+EMAIL_SENDER    =  "noreply_ctig@lookingglasscyber.com"
+
+#alerts go to these addresses
+EMAIL_ADDRESSES =  [ "ctig@lgscout.com", ] 
+
+'''
 Application Settings
 '''
+
+APPLICATION_DOMAIN  = "http://actortrackr.com/"
+APPLICATION_ORG     = "Lookingglass"
+APPLICATION_NAME    = "ActorTrackr"
 
 TLPS    =   [
                 ("0", "White"),
@@ -62,5 +76,10 @@ SESSION_EXPIRE = -1 # in seconds, -1 to disable
 '''
 Recaptcha Settings
 '''
-RECAPTCHA_PUBLIC_KEY = ''
-RECAPTCHA_PRIVATE_KEY = ''
+
+RECAPTCHA_ENABLED       =   True  
+RECAPTCHA_PUBLIC_KEY    =   ''
+RECAPTCHA_PRIVATE_KEY   =   ''
+
+
+

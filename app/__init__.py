@@ -18,14 +18,23 @@ from config.settings import *
 
 import logging
 from logging.handlers import TimedRotatingFileHandler
+from logging import StreamHandler
 log = logging.getLogger(__name__)
 log.setLevel(logging.INFO)
- 
+log.setLevel(logging.DEBUG)
+
+#log formatter
+formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
+
 # add a rotating handler
 handler = TimedRotatingFileHandler(LOG_FILE, when='d', interval=1, backupCount=5) #creates daily logs for 5 days
-formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
 handler.setFormatter(formatter)
 log.addHandler(handler)
+
+# add a console hander
+consoleHandler = StreamHandler()
+consoleHandler.setFormatter(formatter)
+log.addHandler(consoleHandler)
 
 try:
     from flask import Flask

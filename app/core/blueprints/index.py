@@ -418,6 +418,7 @@ def view_all(t,page=1):
         error = "There was an error completing your request. Details: {}".format(e)
         log.exception(error)
         flash(error, "danger")
+        return redirect("/")
 
     return render_template("view_all.html",
                         page_title="View All",
