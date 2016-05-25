@@ -45,7 +45,7 @@ def getIndicesMatchingPattern(name):
         raise Exception("Invalid Argument")
 
     print(name)
-    url = "{}{}".format(ES_HOSTS[0],name)
+    url = "{}/{}".format(ES_HOSTS[0],name)
     print(url)
     r = requests.get(url)
 
