@@ -7,6 +7,7 @@ from flask import redirect
 from flask import jsonify
 from flask import Markup
 from flask import g
+from flask import session
 
 import functools
 import json
@@ -33,6 +34,7 @@ logger_prefix = "actor.py:"
 
 def es_to_form(actor_id):
     form = forms.actorForm()
+    editors = []
 
     #get the values from ES
     results = get_es().get(ES_PREFIX + "threat_actors", doc_type="actor", id=actor_id)
@@ -266,7 +268,10 @@ def es_to_form(actor_id):
         sub_form.data = "_NONE_"
         form.actor_ttps.append_entry(sub_form)
 
-    return form
+    #convert editor dictionary of ids and times to names and times
+    editors = get_editor_names(get_mysql(), actor_data['editor'])
+
+    return form, editors
 
 def es_to_tpx(actor_id):
     '''
@@ -576,7 +581,9 @@ def es_to_tpx(actor_id):
     return tpx
 
 def form_to_es(form, actor_id, update=False):
-
+    logging_prefix = logger_prefix + "form_to_es() - "
+    log.info(logging_prefix + "Converting Form to ES for {}".format(actor_id))
+    
     doc = {}
     element_observables = {}
 
@@ -908,12 +915,27 @@ def form_to_es(form, actor_id, update=False):
             #this will create a tuple ("display text", "value string")
             doc['related_element_choices'].append({"display_text" : k, "value" : v})
 
+    '''
+    Edit Tracking
+    '''
+
+    doc['editor'] = get_editor_list( 
+            es=get_es(),
+            index=ES_PREFIX + "threat_actors",
+            doc_type="actor",
+            item_id=actor_id,
+            user_id=session.get('id',None)
+        )
+
     #index the doc
     #print_tpx(doc['related_ttp'])
     #print_tpx(doc['related_element_choices'])
     #response = None
 
+
+    log.info(logging_prefix + "Start Indexing of {}".format(actor_id))
     response = get_es().index(ES_PREFIX + "threat_actors", "actor", doc, actor_id)
+    log.info(logging_prefix + "Done Indexing of {}".format(actor_id))
 
     return response, doc
 
@@ -957,7 +979,7 @@ def add(template=None):
                
                 #rebuild the form from ES
                 #flash('Not requerying ES, this should change', 'warning')
-                form = es_to_form(actor_id)
+                form, editors = es_to_form(actor_id)
 
                 flash(Markup('<a href="/actor/view/'+actor_id+'" style="text-decoration:none; color:#3c763d;">New Actor Successfully Added. Click here to view this actor</a>') , "success")
 
@@ -968,7 +990,7 @@ def add(template=None):
                 print(form.errors)
         
         elif template:
-            form = es_to_form(template)
+            form, editors = es_to_form(template)
         else:
             #populate certain fields with default data
             form.actor_class[0].a_family.data = 'Actors'
@@ -992,10 +1014,12 @@ def add(template=None):
 def view(actor_id):
     logging_prefix = logger_prefix + "view({}) - ".format(actor_id)
     log.info(logging_prefix + "Starting")
+
+    editors = None
     
     try:
         populate_simple_choices()
-        form = es_to_form(actor_id)
+        form, editors = es_to_form(actor_id)
 
         search_form = forms.searchForm()
     except Exception as e:
@@ -1011,6 +1035,7 @@ def view(actor_id):
                         role="VIEW",
                         actor_id=actor_id,
                         form=form,
+                        editors=editors,
                         search_form = search_form
             )
 
@@ -1024,6 +1049,7 @@ def edit(actor_id):
     try:
         populate_simple_choices()
         form = forms.actorForm(request.form)
+        editors = None
         search_form = forms.searchForm()
 
         if request.method == 'POST':
@@ -1038,7 +1064,7 @@ def edit(actor_id):
                 form_to_es(form, actor_id)
                
                 #rebuild the form from ES
-                form = es_to_form(actor_id)
+                form, editors = es_to_form(actor_id)
 
                 flash("Actor Update Successful!" , "success")
                 #return redirect("/edit/{}/".format(actor_id), code=302)
@@ -1047,7 +1073,7 @@ def edit(actor_id):
                 #   temporary help, these should also appear under the form field
                 print(form.errors)
         else:
-            form = es_to_form(actor_id)
+            form, editors = es_to_form(actor_id)
 
     except Exception as e:
         error = "There was an error completing your request. Details: {}".format(e)
@@ -1061,6 +1087,7 @@ def edit(actor_id):
                         role="EDIT",
                         actor_id=actor_id,
                         form=form,
+                        editors=editors,
                         search_form = search_form
             )
 

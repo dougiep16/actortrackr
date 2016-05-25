@@ -4,14 +4,9 @@ if __name__ == "__main__":
     import sys
 
     TOP_DIR = os.path.dirname(os.path.realpath(__file__))
-
-    CONFIG_PATH= TOP_DIR+"/config"
-    LIB_PATH= TOP_DIR+"/lib"
     APP_PATH = TOP_DIR+"/app"
 
     sys.path.insert(0, TOP_DIR)
-    sys.path.insert(0, CONFIG_PATH)
-    sys.path.insert(0, LIB_PATH)
     sys.path.insert(0, APP_PATH)
 
 from config.settings import *
@@ -20,8 +15,8 @@ import logging
 from logging.handlers import TimedRotatingFileHandler
 from logging import StreamHandler
 log = logging.getLogger(__name__)
-log.setLevel(logging.INFO)
-log.setLevel(logging.DEBUG)
+
+log.setLevel(logging.getLevelName(LOG_LEVEL))
 
 #log formatter
 formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
@@ -32,9 +27,10 @@ handler.setFormatter(formatter)
 log.addHandler(handler)
 
 # add a console hander
-consoleHandler = StreamHandler()
-consoleHandler.setFormatter(formatter)
-log.addHandler(consoleHandler)
+if LOG_TO_CONSOLE:
+    consoleHandler = StreamHandler()
+    consoleHandler.setFormatter(formatter)
+    log.addHandler(consoleHandler)
 
 try:
     from flask import Flask
@@ -114,6 +110,10 @@ def get_mysql():
 
 @app.before_request
 def before_request():
+    if MAINTENANCE_MODE: 
+        # Or alternatively, dont redirect 
+        return 'Sorry, off for maintenance! Be back in 5', 503
+
     g.es      =     get_es()
     g.mysql   =     get_mysql()
 
@@ -121,6 +121,7 @@ def before_request():
 def teardown_request(exception):
     get_mysql().close()
     pass
+
 
 from core.blueprints.actor import actor_blueprint
 from core.blueprints.admin import admin_blueprint

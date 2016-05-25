@@ -7,6 +7,7 @@ from flask import redirect
 from flask import jsonify
 from flask import Markup
 from flask import g
+from flask import session
 
 import functools
 import json
@@ -85,7 +86,10 @@ def es_to_form(ttp_id):
 
             form.ttp_ttps.append_entry(sub_form)
 
-    return form
+    #convert editor dictionary of ids and times to names and times
+    editors = get_editor_names(get_mysql(), ttp_data['editor'])
+
+    return form, editors
 
 def es_to_tpx(ttp_id):
     '''
@@ -252,6 +256,18 @@ def form_to_es(form, ttp_id):
         if r_dict not in doc['related_ttp']:                                
             doc['related_ttp'].append(r_dict)
 
+    '''
+    Edit Tracking
+    '''
+
+    doc['editor'] = get_editor_list( 
+            es=get_es(),
+            index=ES_PREFIX + "threat_ttps",
+            doc_type="ttp",
+            item_id=ttp_id,
+            user_id=session.get('id',None)
+        )
+
     #print_tpx(doc)
 
     #index the doc
@@ -298,7 +314,7 @@ def add(template=None):
                 form_to_es(form, ttp_id)
                
                 #rebuild the form from ES
-                form = es_to_form(ttp_id)
+                form, editors = es_to_form(ttp_id)
 
                 flash(Markup('<a href="/ttp/view/'+ttp_id+'" style="text-decoration:none; color:#3c763d;">New TTP Successfully Added. Click here to view this TTP</a>') , "success")
             else:
@@ -307,7 +323,7 @@ def add(template=None):
                 print(form.errors)
         
         elif template:
-            form = es_to_form(template)
+            form, editors = es_to_form(template)
         else:
             #populate certain fields with default data
             form.ttp_class[0].a_family.data = 'Actors'
@@ -332,8 +348,10 @@ def view(ttp_id):
     logging_prefix = logger_prefix + "view({}) - ".format(ttp_id)
     log.info(logging_prefix + "Starting")
 
+    editors = None
+
     try:
-        form = es_to_form(ttp_id)
+        form, editors = es_to_form(ttp_id)
         search_form = forms.searchForm()
     except Exception as e:
         error = "There was an error completing your request. Details: {}".format(e)
@@ -348,6 +366,7 @@ def view(ttp_id):
                         role="VIEW",
                         ttp_id=ttp_id,
                         form=form,
+                        editors=editors,
                         search_form=search_form
             )
 
@@ -360,9 +379,10 @@ def edit(ttp_id):
 
     error = None
     try:
+        editors = None
+        search_form = forms.searchForm()
         if request.method == 'POST':
             form = forms.ttpForm(request.form)
-            search_form = forms.searchForm()
 
             #trick the form validation into working with our dynamic drop downs
             for sub_form in form.ttp_class:
@@ -381,7 +401,7 @@ def edit(ttp_id):
                 form_to_es(form, ttp_id)
                
                 #rebuild the form from ES
-                form = es_to_form(ttp_id)
+                form, editors = es_to_form(ttp_id)
 
                 flash("TTP Update Successful!" , "success")
             else:
@@ -389,7 +409,7 @@ def edit(ttp_id):
                 #   temporary help, these should also appear under the form field
                 print(form.errors)
         else:
-            form = es_to_form(ttp_id)
+            form, editors = es_to_form(ttp_id)
 
     except Exception as e:
         error = "There was an error completing your request. Details: {}".format(e)
@@ -404,6 +424,7 @@ def edit(ttp_id):
                         role="EDIT",
                         ttp_id=ttp_id,
                         form=form,
+                        editors=editors,
                         search_form=search_form
             )
 

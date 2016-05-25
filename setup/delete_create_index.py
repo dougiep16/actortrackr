@@ -275,6 +275,17 @@ mapping = {
                         }
                     }
                 },
+                "editor" : {
+                    "properties":{  
+                        "user_id":{  
+                            "type":"long"
+                        },
+                        "ts":{  
+                            "type":"date",
+                            "format":"strict_date_optional_time||epoch_millis"
+                        }
+                    }
+                },
                 "financial_account":{  
                     "properties":{  
                         "type":{  
@@ -571,6 +582,17 @@ mapping = {
                 "description":{  
                     "type":"string"
                 },
+                "editor" : {
+                    "properties":{  
+                        "user_id":{  
+                            "type":"long"
+                        },
+                        "ts":{  
+                            "type":"date",
+                            "format":"strict_date_optional_time||epoch_millis"
+                        }
+                    }
+                },
                 "identifier":{  
                     "type":"string",
                     "fields": {
@@ -786,6 +808,17 @@ mapping = {
                 },
                 "description":{  
                     "type":"string"
+                },
+                "editor" : {
+                    "properties":{  
+                        "user_id":{  
+                            "type":"long"
+                        },
+                        "ts":{  
+                            "type":"date",
+                            "format":"strict_date_optional_time||epoch_millis"
+                        }
+                    }
                 },
                 "last_updated_milli":{  
                     "type":"long"

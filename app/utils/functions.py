@@ -8,6 +8,7 @@ import time
 import uuid
 from datetime import datetime
 from operator import itemgetter
+from pymysql.cursors import DictCursor
 from urllib.parse import quote_plus
 
 #email imports
@@ -45,6 +46,67 @@ def multikeysort(items, columns):
         else:
             return 0
     return sorted(items, key=functools.cmp_to_key(comparer))
+
+'''
+Edit Tracking Helpers
+'''
+
+def get_editor_names(mysql, es_editors):
+    user_ids = []
+    editors = []
+
+    #get a uniq list of user ids
+    for editor in es_editors:
+        user_id = editor.get('user_id')
+        if user_id:
+            if user_id not in user_ids:
+                user_ids.append(user_id)
+
+    #with the unique list query mysql
+    if user_ids:
+        query = "SELECT id, name FROM users WHERE id IN ({})".format(','.join(str(x) for x in user_ids))
+        conn = mysql.cursor(DictCursor)
+        conn.execute(query)
+        results = conn.fetchall()
+        conn.close()
+
+        user_dict = {} #maps id to name
+        for user in results:
+            user_dict[user['id']] = user['name']
+
+        for editor in es_editors:
+            editors.append({
+                    "user_name" : user_dict[editor['user_id']],
+                    "ts" : editor['ts']
+                })
+
+
+    editors.reverse()
+    return editors
+
+
+def get_editor_list(es, index, doc_type, item_id, user_id):
+    #get the current list of editors
+    try:
+        #if this is the "Add" function, the id wont exist, so catch the exception
+        current_data = es.get(index=index, doc_type=doc_type, id=item_id)
+        editors = current_data['_source']['editor']
+    except:
+        editors = []
+
+    if user_id:
+        editors.append({
+            'user_id' : user_id, 
+            'ts' : datetime.now().strftime("%Y-%m-%dT%H:%M:%S") 
+            })
+    else:
+        raise Exception("Unable to locate User ID for session")
+
+    return editors
+
+'''
+Email functions
+'''
 
 def sendAccountVerificationEmail(email, verification_hash):
     to      = [ email, ]

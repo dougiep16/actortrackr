@@ -3,7 +3,7 @@ Elasticsearch Settings
 '''
 
 ES_PREFIX   = "tp-"
-ES_HOSTS    = ['localhost',]
+ES_HOSTS    = ['http://localhost:9200',]
 
 '''
 MySQL Settings
@@ -17,7 +17,9 @@ MYSQL_DB        = 'threat_actors'
 Log Settings
 '''
 
-LOG_FILE = "/var/log/actortrackr/actortrackr.log"
+LOG_FILE        = "/var/log/actortrackr/actortrackr.log"
+LOG_TO_CONSOLE  = True
+LOG_LEVEL       = "DEBUG" #NOSET, DEBUG, INFO, WARNING, ERROR, CRITICAL
 
 '''
 Email Settings
@@ -32,6 +34,8 @@ EMAIL_ADDRESSES =  [ "ctig@lgscout.com", ]
 '''
 Application Settings
 '''
+
+MAINTENANCE_MODE = False
 
 APPLICATION_DOMAIN  = "http://actortrackr.com/"
 APPLICATION_ORG     = "Lookingglass"

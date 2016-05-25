@@ -7,6 +7,7 @@ from flask import redirect
 from flask import jsonify
 from flask import Markup
 from flask import g
+from flask import session
 
 import functools
 import json
@@ -191,7 +192,10 @@ def es_to_form(report_id):
         sub_form.data = "_NONE_"
         form.report_ttps.append_entry(sub_form)
 
-    return form
+    #convert editor dictionary of ids and times to names and times
+    editors = get_editor_names(get_mysql(), report_data['editor'])
+
+    return form, editors
 
 def es_to_tpx(report_id):
     '''
@@ -579,7 +583,17 @@ def form_to_es(form, report_id):
             #this will create a tuple ("display text", "value string")
             doc['related_element_choices'].append({"display_text" : k, "value" : v})
 
-    #print_tpx(doc)
+    '''
+    Edit Tracking
+    '''
+
+    doc['editor'] = get_editor_list( 
+            es=get_es(),
+            index=ES_PREFIX + "threat_reports",
+            doc_type="report",
+            item_id=report_id,
+            user_id=session.get('id',None)
+        )
 
     #index the doc
     log.info(logging_prefix + "Start Indexing of {}".format(report_id))
@@ -627,7 +641,7 @@ def add(template=None):
                 form_to_es(form, report_id)
                
                 #rebuild the form from ES
-                form = es_to_form(report_id)
+                form, editors = es_to_form(report_id)
 
                 flash(Markup('<a href="/report/view/'+report_id+'" style="text-decoration:none; color:#3c763d;">New Report Successfully Added. Click here to view this Report</a>') , "success")
             else:
@@ -636,7 +650,7 @@ def add(template=None):
                 print(form.errors)
         
         elif template:
-            form = es_to_form(template)
+            form, editors = es_to_form(template)
         else:
             #populate certain fields with default data
             form.report_class[0].a_family.data = 'Actors'
@@ -662,9 +676,10 @@ def view(report_id):
     logging_prefix = logger_prefix + "view({}) - ".format(report_id)
     log.info(logging_prefix + "Starting")
 
-    error = None
+    editors = None
+
     try:
-        form = es_to_form(report_id)
+        form, editors = es_to_form(report_id)
         search_form = forms.searchForm()
     except Exception as e:
         error = "There was an error completing your request. Details: {}".format(e)
@@ -679,6 +694,7 @@ def view(report_id):
                         role="VIEW",
                         report_id=report_id,
                         form=form,
+                        editors=editors,
                         search_form=search_form
             )
 
@@ -692,9 +708,10 @@ def edit(report_id):
 
     error = None
     try:
+        search_form = forms.searchForm()
+        editors = None
         if request.method == 'POST':
             form = forms.reportForm(request.form)
-            search_form = forms.searchForm()
 
             #trick the form validation into working with our dynamic drop downs
             for sub_form in form.report_class:
@@ -713,7 +730,7 @@ def edit(report_id):
                 form_to_es(form, report_id)
                
                 #rebuild the form from ES
-                form = es_to_form(report_id)
+                form, editors = es_to_form(report_id)
 
                 flash("Report Update Successful!" , "success")
             else:
@@ -721,7 +738,7 @@ def edit(report_id):
                 #   temporary help, these should also appear under the form field
                 print(form.errors)
         else:
-            form = es_to_form(report_id)
+            form, editors = es_to_form(report_id)
 
     except Exception as e:
         error = "There was an error completing your request. Details: {}".format(e)
@@ -736,6 +753,7 @@ def edit(report_id):
                         role="EDIT",
                         report_id=report_id,
                         form=form,
+                        editors=editors,
                         search_form=search_form
             )
 
