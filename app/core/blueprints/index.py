@@ -218,45 +218,72 @@ def index():
 @index_blueprint.route("/export/", methods = ['GET'])
 @authentication.access(authentication.PUBLIC)
 def export_all_the_data():
-    dump = {}
-    dump['actors'] = []
-    dump['reports'] = []
-    dump['ttps'] = []
-    dump['choices'] = []
+    logging_prefix = logger_prefix + "export_all_the_data() - "
+    log.info(logging_prefix + "Exporting")
 
-    query = {
-        "query" : {
-            "match_all" : {}
+    try:
+        dump = {}
+        dump['actors'] = []
+        dump['reports'] = []
+        dump['ttps'] = []
+        dump['choices'] = {}
+
+        query = {
+            "query" : {
+                "match_all" : {}
+            }
         }
-    }
 
-    results = scan(get_es(),query=query,index=ES_PREFIX + "threat_actors",doc_type="actor")
+        results = scan(get_es(),query=query,index=ES_PREFIX + "threat_actors",doc_type="actor")
 
-    for i in results:
-        dump['actors'].append(i)
+        
+        for i in results:
+            dump['actors'].append(i)
 
-    results = scan(get_es(),query=query,index=ES_PREFIX + "threat_reports",doc_type="report")
+        results = scan(get_es(),query=query,index=ES_PREFIX + "threat_reports",doc_type="report")
 
-    for i in results:
-        dump['reports'].append(i)
+        for i in results:
+            dump['reports'].append(i)
 
-    results = scan(get_es(),query=query,index=ES_PREFIX + "threat_ttps",doc_type="ttp")
+        results = scan(get_es(),query=query,index=ES_PREFIX + "threat_ttps",doc_type="ttp")
 
-    for i in results:
-        dump['ttps'].append(i)
+        for i in results:
+            dump['ttps'].append(i)
 
-    # We need to modify the response, so the first thing we 
-    # need to do is create a response out of the CSV string
-    response = make_response(json.dumps(dump))
+        results = scan(get_es(),query=query,index=ES_PREFIX + "threat_actor_pc",doc_type="parent")
 
-    # This is the key: Set the right header for the response
-    # to be downloaded, instead of just printed on the browser
-    response.headers["Content-Disposition"] = "attachment; filename=export.json"
-    response.headers["Content-Type"] = "text/json; charset=utf-8"
+        dump['choices']['parents'] = []
+        for i in results:
+            dump['choices']['parents'].append(i)
 
-    print(response.headers)
+        results = scan(get_es(),query=query,index=ES_PREFIX + "threat_actor_pc",doc_type="child")
 
-    return response
+        dump['choices']['children'] = []
+        for i in results:
+            dump['choices']['children'].append(i)
+
+        results = scan(get_es(),query=query,index=ES_PREFIX + "threat_actor_simple",doc_type="data")
+
+        dump['choices']['simple'] = []
+        for i in results:
+            dump['choices']['simple'].append(i)
+
+        # We need to modify the response, so the first thing we 
+        # need to do is create a response out of the Dictionary
+        response = make_response(json.dumps(dump))
+
+        # This is the key: Set the right header for the response
+        # to be downloaded, instead of just printed on the browser
+        response.headers["Content-Disposition"] = "attachment; filename=export.json"
+        response.headers["Content-Type"] = "text/json; charset=utf-8"
+
+        return response
+
+    except Exception as e:
+        error = "There was an error completing your request. Details: {}".format(e)
+        log.exception(error)
+        flash(error, "danger")
+        return redirect("/")
 
 @index_blueprint.route("/<t>", methods = ['GET','POST'])
 @index_blueprint.route("/<t>/", methods = ['GET','POST'])
